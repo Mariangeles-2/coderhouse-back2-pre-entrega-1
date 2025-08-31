@@ -1,0 +1,41 @@
+{
+  "name": "ecommerce-backend",
+  "version": "1.0.0",
+  "description": "Ecommerce Backend - Pre-entrega 1",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "format": "prettier --write src/**/*.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "backend",
+    "authentication",
+    "authorization",
+    "passport"
+  ],
+  "author": "Angie Somma",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-mongo": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "method-override": "^3.0.0",
+    "mongoose": "^8.0.0",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
+  }
+}
