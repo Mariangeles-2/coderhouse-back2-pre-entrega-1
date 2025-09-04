@@ -1,0 +1,21 @@
+{
+  "watch": [
+    "src"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/**/*",
+    "docs/**/*",
+    "*.test.js",
+    "*.spec.js"
+  ],
+  "events": {
+    "restart": "echo '🔄 Reiniciando servidor...' && npm run lint:check",
+    "start": "echo '🚀 Iniciando servidor...' && npm run lint:check"
+  },
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000,
+  "verbose": true
+}

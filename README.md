@@ -1,97 +1,69 @@
-# 🛍️ Ecommerce Backend - Pre-entrega 1
+# 🛍️ Ecommerce Backend API - Pre-entrega 1
 
-## 📋 Descripción
+API REST completa para un sistema de ecommerce con autenticación, autorización y gestión de usuarios, productos y
+carritos.
 
-Sistema completo de ecommerce backend desarrollado para la **Pre-entrega 1 del curso de Backend 2 de Coderhouse**.
-Implementa autenticación y autorización utilizando **Passport.js** con estrategias locales, siguiendo principios de *
-*Clean Code** y arquitectura escalable.
+## 🚀 Características
 
-## ✨ Características Principales
+- ✅ **Autenticación completa** con Passport.js (registro, login, logout)
+- 🔐 **Autorización por roles** (user, premium, admin)
+- 👥 **Gestión de usuarios** con diferentes niveles de acceso
+- 🛍️ **CRUD completo de productos** con ownership
+- 🛒 **Sistema de carrito** personalizado por usuario
+- 📚 **Documentación Swagger/OpenAPI** completa
+- 🧪 **Colección Postman** para testing
+- 🔧 **ESLint + Prettier** integrados automáticamente
+- 📝 **Logging avanzado** con diferentes niveles
+- 🚨 **Manejo de errores** robusto y consistente
 
-### 🔐 Autenticación y Autorización
+## 🛠️ Tecnologías
 
-- ✅ **Passport Local Strategy** para registro y login
-- ✅ **Bcrypt** para encriptación segura de contraseñas
-- ✅ **Express Sessions** con MongoDB como store
-- ✅ **Middleware de autenticación** para proteger rutas
-- ✅ **Sistema de roles** (user, premium, admin)
-- ✅ **Middleware de autorización** por roles
+- **Node.js** + **Express.js**
+- **MongoDB** + **Mongoose**
+- **Passport.js** (autenticación)
+- **Express-session** + **Connect-mongo**
+- **BCrypt** (hash de contraseñas)
+- **Swagger UI** (documentación)
+- **ESLint** + **Prettier** (calidad de código)
 
-### 👥 Gestión de Usuarios
-
-- ✅ Registro completo con validaciones
-- ✅ Login/logout seguro
-- ✅ Perfil de usuario
-- ✅ CRUD completo de usuarios (admin)
-- ✅ Cambio de roles (admin)
-
-### 🛍️ Sistema de Productos
-
-- ✅ CRUD completo de productos
-- ✅ Filtros por categoría y búsqueda
-- ✅ Paginación
-- ✅ Control de stock
-- ✅ Permisos por rol (premium/admin pueden crear)
-
-### 🛒 Carrito de Compras
-
-- ✅ Carrito personal por usuario
-- ✅ Agregar/eliminar productos
-- ✅ Actualizar cantidades
-- ✅ Validación de stock
-- ✅ Cálculo automático de totales
-
-### 🎨 Interfaz y Experiencia
-
-- ✅ **Handlebars** como motor de plantillas
-- ✅ **Bootstrap 5** para diseño responsive
-- ✅ **Helpers personalizados** para comparaciones
-- ✅ **AJAX** para operaciones sin recarga
-- ✅ **Mensajes con emojis** en consola y UI
-
-### 🔧 Herramientas de Desarrollo
-
-- ✅ **ESLint** configurado para ES2021
-- ✅ **Prettier** para formateo de código
-- ✅ **Nodemon** para desarrollo
-- ✅ **MongoDB** con Mongoose ODM
-- ✅ **Variables de entorno** con dotenv
-
-## 🏗️ Arquitectura del Proyecto
+## 📁 Estructura del Proyecto
 
 ```
-src/
-├── app.js                 # 🚀 Archivo principal de la aplicación
-├── config/               # ⚙️ Configuraciones
-│   ├── database.config.js
-│   ├── passport.config.js
-│   └── session.config.js
-├── controllers/          # 🎮 Controladores
-│   ├── auth.controller.js
-│   ├── cart.controller.js
-│   ├── product.controller.js
-│   └── user.controller.js
-├── middlewares/          # 🛡️ Middlewares
-│   └── auth.middleware.js
-├── models/              # 📊 Modelos de datos
-│   ├── Cart.model.js
-│   ├── Product.model.js
-│   └── User.model.js
-├── routes/              # 🛣️ Rutas
-│   ├── auth.routes.js
-│   ├── cart.routes.js
-│   ├── product.routes.js
-│   └── user.routes.js
-├── utils/               # 🔧 Utilidades
-│   ├── handlebars.helpers.js
-│   └── logger.util.js
-└── views/               # 🎨 Vistas
-    ├── layouts/
-    ├── auth/
-    └── partials/
+├── src/
+│   ├── app.js                 # Aplicación principal
+│   ├── config/               # Configuraciones
+│   │   ├── database.config.js
+│   │   ├── passport.config.js
+│   │   └── session.config.js
+│   ├── controllers/          # Lógica de negocio
+│   │   ├── auth.controller.js
+│   │   ├── cart.controller.js
+│   │   ├── product.controller.js
+│   │   └── user.controller.js
+│   ├── middlewares/          # Middlewares personalizados
+│   │   ├── auth.middleware.js
+│   │   └── error.middleware.js
+│   ├── models/               # Modelos de datos
+│   │   ├── Cart.model.js
+│   │   ├── Product.model.js
+│   │   └── User.model.js
+│   ├── routes/               # Definición de rutas
+│   │   ├── auth.routes.js
+│   │   ├── cart.routes.js
+│   │   ├── product.routes.js
+│   │   └── user.routes.js
+│   └── utils/                # Utilidades
+│       └── logger.util.js
+├── docs/
+│   └── api/                  # Documentación
+│       ├── swagger.json      # Especificación OpenAPI
+│       └── Ecommerce_Backend_API.postman_collection.json
+├── eslint.config.js          # Configuración ESLint
+├── nodemon.json             # Configuración Nodemon
+└── package.json
 ```
 
-## 🚀 Instalación y Configuración
+## 🚀 Instalación y Uso
 
 ### 1. Clonar el repositorio
 
@@ -108,269 +80,147 @@ npm install
 
 ### 3. Configurar variables de entorno
 
-Crear archivo `.env` en la raíz del proyecto:
+Crear archivo `.env` en la raíz:
 
 ```env
-# 🛍️ Configuración del Ecommerce Backend
 PORT=8080
-MONGO_URI=mongodb://localhost:27017/ecommerce_backend
-SESSION_SECRET=mi_secreto_super_seguro_para_sesiones
+MONGODB_URI=mongodb://localhost:27017/ecommerce
+SESSION_SECRET=tu-secret-key-aqui
 NODE_ENV=development
-
-# 🔐 Configuración de Autenticación
-BCRYPT_ROUNDS=10
 ```
 
-### 4. Iniciar MongoDB
+### 4. Ejecutar el proyecto
 
-Asegúrate de tener MongoDB ejecutándose en tu sistema.
-
-### 5. Ejecutar la aplicación
+#### Desarrollo (con auto-restart y linting)
 
 ```bash
-# Desarrollo (con Nodemon)
 npm run dev
+```
 
-# Producción
+#### Producción
+
+```bash
 npm start
 ```
 
-## 📡 API Endpoints
-
-### 🔐 Autenticación
-
-```
-GET  /auth/register     # Mostrar formulario de registro
-POST /auth/register     # Procesar registro
-GET  /auth/login        # Mostrar formulario de login
-POST /auth/login        # Procesar login
-POST /auth/logout       # Cerrar sesión
-GET  /auth/profile      # Perfil del usuario
-GET  /auth/check        # Verificar autenticación
-```
-
-### 👥 Usuarios (requiere autenticación)
-
-```
-GET    /api/users           # Listar usuarios (admin)
-GET    /api/users/:id       # Obtener usuario por ID
-PUT    /api/users/:id       # Actualizar usuario
-DELETE /api/users/:id       # Eliminar usuario (admin)
-PATCH  /api/users/:id/role  # Cambiar rol (admin)
-```
-
-### 🛍️ Productos
-
-```
-GET    /api/products        # Listar productos (público)
-GET    /api/products/:id    # Obtener producto por ID (público)
-POST   /api/products        # Crear producto (premium/admin)
-PUT    /api/products/:id    # Actualizar producto (propietario/admin)
-DELETE /api/products/:id    # Eliminar producto (propietario/admin)
-```
-
-### 🛒 Carritos (requiere autenticación)
-
-```
-GET    /api/carts                    # Obtener carrito del usuario
-POST   /api/carts/add               # Agregar producto al carrito
-PUT    /api/carts/products/:id      # Actualizar cantidad
-DELETE /api/carts/products/:id      # Eliminar producto del carrito
-DELETE /api/carts/clear             # Limpiar carrito
-```
-
-## 👤 Sistema de Roles
-
-### 🔹 User (Usuario básico)
-
-- ✅ Registrarse y autenticarse
-- ✅ Ver productos
-- ✅ Gestionar su carrito
-- ✅ Editar su perfil
-
-### ⭐ Premium
-
-- ✅ Todo lo del usuario básico
-- ✅ Crear productos
-- ✅ Editar sus productos
-
-### 👑 Admin (Administrador)
-
-- ✅ Todo lo anterior
-- ✅ Gestionar todos los usuarios
-- ✅ Cambiar roles de usuarios
-- ✅ Eliminar usuarios
-- ✅ Editar/eliminar cualquier producto
-
-## 📊 Modelos de Datos
-
-### User Schema
-
-```javascript
-{
-    first_name: String(required),
-        last_name
-:
-    String(required),
-        email
-:
-    String(required, unique),
-        age
-:
-    Number(required),
-        password
-:
-    String(required, hashed),
-        cart
-:
-    ObjectId(ref
-:
-    Cart
-),
-    role: String(
-
-    enum
-
-:
-    ['user', 'premium', 'admin']
-)
-}
-```
-
-### Product Schema
-
-```javascript
-{
-    title: String(required),
-        description
-:
-    String(required),
-        price
-:
-    Number(required),
-        thumbnail
-:
-    String,
-        code
-:
-    String(required, unique),
-        stock
-:
-    Number(required),
-        category
-:
-    String(
-
-    enum
-
-),
-    status: Boolean,
-        owner
-:
-    ObjectId(ref
-:
-    User
-)
-}
-```
-
-### Cart Schema
-
-```javascript
-{
-    user: ObjectId(ref
-:
-    User
-),
-    products: [{
-        product: ObjectId(ref
-:
-    Product
-),
-    quantity: Number,
-        price
-:
-    Number
-}],
-    totalAmount: Number,
-        status
-:
-    String(
-
-    enum
-
-:
-    ['active', 'completed', 'cancelled']
-)
-}
-```
-
-## 🛠️ Scripts Disponibles
+#### Scripts disponibles
 
 ```bash
-npm start          # Iniciar en producción
-npm run dev        # Iniciar en desarrollo (Nodemon)
-npm run lint       # Ejecutar ESLint
-npm run lint:fix   # Corregir errores de ESLint
-npm run format     # Formatear código con Prettier
+npm run check         # Verificar ESLint + Prettier
+npm run fix          # Corregir automáticamente errores
+npm run lint:check   # Solo verificar ESLint
+npm run format       # Aplicar formato Prettier
+npm run test:lint    # Test de linting para CI/CD
+npm run test:format  # Test de formato para CI/CD
 ```
 
-## 🔐 Seguridad Implementada
+## 📚 Documentación
 
-- ✅ **Contraseñas hasheadas** con bcrypt
-- ✅ **Sesiones seguras** con express-session
-- ✅ **Validación de entrada** en modelos
-- ✅ **Middleware de autenticación**
-- ✅ **Control de acceso por roles**
-- ✅ **Protección CSRF** implícita
-- ✅ **Validación de propietario** en recursos
+### API Documentation
 
-## 🎯 Funcionalidades Destacadas
+- **Swagger UI**: http://localhost:8080/api-docs
+- **OpenAPI JSON**: http://localhost:8080/api-docs.json
 
-### 🚀 Clean Code
+### Testing
 
-- Arquitectura por capas bien definida
-- Controladores separados por responsabilidad
-- Middlewares reutilizables
-- Utilidades centralizadas
-- Código comentado y documentado
+Importa la colección de Postman desde:
 
-### 📱 Logger con Emojis
+```
+docs/api/Ecommerce_Backend_API.postman_collection.json
+```
 
-- Mensajes coloridos y descriptivos
-- Diferentes niveles de log
-- Contexto específico por operación
+## 🔐 Roles y Permisos
 
-### 🎨 Interfaz Moderna
+### 👤 User (usuario básico)
 
-- Diseño responsive con Bootstrap 5
-- Formularios interactivos con AJAX
-- Mensajes de retroalimentación
-- Navegación intuitiva
+- Ver productos
+- Gestionar su carrito
+- Actualizar su perfil
 
-## 🔮 Próximas Mejoras
+### 💎 Premium
 
-- [ ] JWT para autenticación stateless
-- [ ] OAuth con Google/GitHub
-- [ ] Sistema de recuperación de contraseña
-- [ ] Notificaciones por email
-- [ ] Dashboard de administración
-- [ ] API REST documentada con Swagger
-- [ ] Tests unitarios y de integración
-- [ ] Docker para containerización
+- Todos los permisos de User
+- Crear productos
+- Gestionar sus propios productos
 
-## 👨‍💻 Autor
+### 👑 Admin
 
-**Angie Somma**  
-Estudiante de Backend 2 - Coderhouse  
-Pre-entrega 1
+- Todos los permisos
+- Gestionar cualquier producto
+- Gestionar usuarios
+- Cambiar roles
+- Acceso a estadísticas
 
----
+## 🛣️ Endpoints Principales
+
+### Autenticación
+
+- `POST /auth/register` - Registro de usuario
+- `POST /auth/login` - Inicio de sesión
+- `GET /auth/current` - Usuario actual
+- `POST /auth/logout` - Cerrar sesión
+
+### Usuarios
+
+- `GET /api/users` - Lista usuarios (admin)
+- `PUT /api/users/:id` - Actualizar usuario
+- `PATCH /api/users/:id/role` - Cambiar rol (admin)
+- `DELETE /api/users/:id` - Eliminar usuario (admin)
+
+### Productos
+
+- `GET /api/products` - Lista productos (paginado)
+- `GET /api/products/:id` - Obtener producto
+- `POST /api/products` - Crear producto (premium/admin)
+- `PUT /api/products/:id` - Actualizar producto (owner/admin)
+- `DELETE /api/products/:id` - Eliminar producto (owner/admin)
+
+### Carrito
+
+- `GET /api/carts` - Obtener carrito del usuario
+- `POST /api/carts/add` - Agregar producto al carrito
+- `PUT /api/carts/product/:pid` - Actualizar cantidad
+- `DELETE /api/carts/product/:pid` - Eliminar producto
+- `POST /api/carts/purchase` - Procesar compra
+
+## 🔧 Desarrollo
+
+### Calidad de Código
+
+El proyecto incluye ESLint y Prettier configurados automáticamente:
+
+- Se ejecuta linting automáticamente al iniciar el servidor
+- Nodemon reinicia el servidor y ejecuta linting en cada cambio
+- Configuración optimizada para ES6+ y mejores prácticas
+
+### Logging
+
+Sistema de logging robusto con diferentes niveles:
+
+- `logger.info()` - Información general
+- `logger.success()` - Operaciones exitosas
+- `logger.warning()` - Advertencias
+- `logger.error()` - Errores
+
+### Manejo de Errores
+
+- Uso de `express-async-errors` para manejo automático
+- Middleware global de errores
+- Respuestas consistentes con `http-errors`
+- Logging contextual de errores
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crea un Pull Request
 
 ## 📄 Licencia
 
-Este proyecto es parte de un curso educativo y está bajo la licencia ISC.
+ISC
 
----
+## 👨‍💻 Autor
 
-*Desarrollado con ❤️ y muchos ☕ para Coderhouse Backend 2*
+**Angie Somma** - Coderhouse Backend 2

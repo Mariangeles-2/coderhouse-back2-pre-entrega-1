@@ -1,8 +1,10 @@
-import {logger} from '../utils/logger.util.js';
+import { logger } from '../utils/logger.util.js';
 import Product from '../models/Product.model.js';
+import { throwForbidden, throwNotFound, throwUnauthorized } from './error.middleware.js';
 
 /**
- * 🛡️ Middlewares de Autenticación y Autorización
+ * 🛡️ Middlewares de Autenticación y Autorización - Versión Simplificada
+ * Usando http-errors (librería estándar) + express-async-errors
  */
 class AuthMiddleware {
   /**
@@ -15,10 +17,7 @@ class AuthMiddleware {
     }
 
     logger.warning('⚠️ Intento de acceso sin autenticación');
-    return res.status(401).json({
-      success: false,
-      message: 'Acceso no autorizado. Debes iniciar sesión.',
-    });
+    throwUnauthorized('Debes iniciar sesión para acceder a este recurso');
   }
 
   /**
@@ -46,88 +45,83 @@ class AuthMiddleware {
       return next();
     }
 
-    logger.warning(`🚫 Acceso denegado - Se requiere rol admin: ${req.user?.email || 'No autenticado'}`);
-    return res.status(403).json({
-      success: false,
-      message: 'Acceso denegado. Se requieren permisos de administrador.',
-    });
+    logger.warning(
+      `🚫 Acceso denegado - Se requiere rol admin: ${req.user?.email || 'No autenticado'}`
+    );
+    throwForbidden('Se requieren permisos de administrador para acceder a este recurso');
   }
 
   /**
-   * ⭐ Verificar rol premium o admin
+   * 👑 Verificar si es admin o propietario del producto
    */
-  static isPremiumOrAdmin(req, res, next) {
-    if (req.isAuthenticated() && ['admin', 'premium'].includes(req.user.role)) {
-      logger.auth(`⭐ Acceso premium/admin autorizado: ${req.user.email}`);
+  static async isAdminOrOwner(req, res, next) {
+    // Primero verificar autenticación
+    if (!req.isAuthenticated()) {
+      throwUnauthorized('Debes iniciar sesión para acceder a este recurso');
+    }
+
+    const user = req.user;
+    const productId = req.params.pid;
+
+    // Si es admin, permitir acceso
+    if (user.role === 'admin') {
+      logger.auth(`👑 Acceso de admin autorizado: ${user.email}`);
       return next();
     }
 
-    logger.warning(`🚫 Acceso denegado - Se requiere rol premium/admin: ${req.user?.email || 'No autenticado'}`);
-    return res.status(403).json({
-      success: false,
-      message: 'Acceso denegado. Se requieren permisos premium o de administrador.',
-    });
-  }
-
-  /**
-   * 🏠 Verificar que el usuario solo acceda a sus propios recursos
-   */
-  static isOwnerOrAdmin(req, res, next) {
-    const resourceUserId = req.params.id || req.body.userId;
-    const currentUserId = req.user._id.toString();
-    const isAdmin = req.user.role === 'admin';
-
-    if (isAdmin || currentUserId === resourceUserId) {
-      logger.auth(`🏠 Acceso a recurso propio autorizado: ${req.user.email}`);
-      return next();
-    }
-
-    logger.warning(`🚫 Acceso denegado - Recurso no pertenece al usuario: ${req.user.email}`);
-    return res.status(403).json({
-      success: false,
-      message: 'Acceso denegado. Solo puedes acceder a tus propios recursos.',
-    });
-  }
-
-  /**
-   * 🏠 Verificar que el usuario sea propietario del producto o admin
-   */
-  static async isProductOwnerOrAdmin(req, res, next) {
-    try {
-      const {id} = req.params;
-      const product = await Product.findById(id);
+    // Si es usuario premium, verificar que sea propietario del producto
+    if (user.role === 'premium') {
+      const product = await Product.findById(productId);
 
       if (!product) {
-        logger.warning(`⚠️ Producto no encontrado: ${id}`);
-        return res.status(404).json({
-          success: false,
-          message: 'Producto no encontrado',
-        });
+        throwNotFound('Producto');
       }
 
-      // Verificar si es el propietario o admin
-      const isOwner = product.owner?.toString() === req.user._id.toString();
-      const isAdmin = req.user.role === 'admin';
-
-      if (!isOwner && !isAdmin) {
-        logger.warning(`🚫 Acceso denegado - Usuario no es propietario del producto: ${req.user.email}`);
-        return res.status(403).json({
-          success: false,
-          message: 'Acceso denegado. Solo el propietario del producto o un administrador pueden realizar esta acción.',
-        });
+      if (product.owner.toString() === user._id.toString()) {
+        logger.auth(
+          `✅ Acceso de propietario autorizado: ${user.email} para producto ${productId}`
+        );
+        return next();
+      } else {
+        logger.warning(
+          `🚫 Usuario premium sin permisos: ${user.email} intentó acceder a producto ${productId}`
+        );
+        throwForbidden('Solo puedes modificar productos de tu propiedad');
       }
-
-      logger.auth(`✅ Acceso autorizado al producto ${product.title} por: ${req.user.email}`);
-      // Pasar el producto al siguiente middleware/controlador para evitar consulta duplicada
-      req.product = product;
-      return next();
-    } catch (error) {
-      logger.error('❌ Error al verificar propietario del producto:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor',
-      });
     }
+
+    // Usuario normal sin permisos
+    logger.warning(`🚫 Acceso denegado - Usuario sin permisos: ${user.email}`);
+    throwForbidden('No tienes permisos para realizar esta acción');
+  }
+
+  /**
+   * 🛒 Verificar que el usuario no sea propietario del producto (para agregar al carrito)
+   */
+  static async cannotAddOwnProduct(req, res, next) {
+    if (!req.isAuthenticated()) {
+      throwUnauthorized('Debes iniciar sesión para agregar productos al carrito');
+    }
+
+    const user = req.user;
+    const productId = req.body.productId; // Viene del body en lugar de params
+
+    // Solo verificar si es usuario premium (los admins no pueden agregar productos al carrito)
+    if (user.role === 'premium') {
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        throwNotFound('Producto');
+      }
+
+      if (product.owner.toString() === user._id.toString()) {
+        logger.warning(`🚫 Usuario intentó agregar su propio producto al carrito: ${user.email}`);
+        throwForbidden('No puedes agregar tu propio producto al carrito');
+      }
+    }
+
+    logger.auth(`✅ Usuario autorizado para agregar producto al carrito: ${user.email}`);
+    next();
   }
 }
 

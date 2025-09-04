@@ -1,0 +1,589 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "🛍️ Ecommerce Backend API",
+    "version": "1.0.0",
+    "description": "API REST para un sistema de ecommerce con autenticación, gestión de productos, carritos y usuarios."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Servidor de desarrollo"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Endpoints de autenticación y gestión de sesiones"
+    },
+    {
+      "name": "Products",
+      "description": "CRUD de productos del ecommerce"
+    },
+    {
+      "name": "Carts",
+      "description": "Gestión de carritos de compra"
+    },
+    {
+      "name": "Users",
+      "description": "Gestión de usuarios y perfiles"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Registrar nuevo usuario",
+        "description": "Permite registrar un nuevo usuario en el sistema",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "email",
+                  "password",
+                  "age"
+                ],
+                "properties": {
+                  "first_name": {
+                    "type": "string",
+                    "example": "Juan"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "example": "Pérez"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "juan.perez@email.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 6,
+                    "example": "password123"
+                  },
+                  "age": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 120,
+                    "example": 25
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado exitosamente"
+          },
+          "400": {
+            "description": "Error de validación"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Iniciar sesión",
+        "description": "Permite a un usuario iniciar sesión en el sistema",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "juan.perez@email.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "password123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login exitoso"
+          },
+          "400": {
+            "description": "Credenciales inválidas"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Cerrar sesión",
+        "description": "Permite a un usuario cerrar su sesión actual",
+        "responses": {
+          "200": {
+            "description": "Logout exitoso"
+          },
+          "401": {
+            "description": "No autenticado"
+          }
+        }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Obtener perfil del usuario actual",
+        "description": "Obtiene la información del usuario autenticado",
+        "responses": {
+          "200": {
+            "description": "Perfil del usuario"
+          },
+          "401": {
+            "description": "No autenticado"
+          }
+        }
+      }
+    },
+    "/auth/check": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verificar estado de autenticación",
+        "description": "Verifica si el usuario está autenticado",
+        "responses": {
+          "200": {
+            "description": "Estado de autenticación"
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Obtener todos los productos",
+        "description": "Lista todos los productos con paginación y filtros",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de productos"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Crear nuevo producto",
+        "description": "Permite crear un nuevo producto (solo usuarios premium y admin)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "price",
+                  "stock",
+                  "category"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "iPhone 15 Pro"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Smartphone Apple con chip A17 Pro"
+                  },
+                  "price": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 999.99
+                  },
+                  "stock": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 50
+                  },
+                  "category": {
+                    "type": "string",
+                    "example": "smartphones"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Producto creado exitosamente"
+          },
+          "400": {
+            "description": "Error de validación"
+          },
+          "401": {
+            "description": "No autenticado"
+          }
+        }
+      }
+    },
+    "/api/products/{pid}": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Obtener producto por ID",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Producto encontrado"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Actualizar producto",
+        "description": "Actualiza un producto existente (solo propietario o admin)",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Producto actualizado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Eliminar producto",
+        "description": "Elimina un producto (solo propietario o admin)",
+        "parameters": [
+          {
+            "name": "pid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Producto eliminado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Producto no encontrado"
+          }
+        }
+      }
+    },
+    "/api/carts": {
+      "get": {
+        "tags": [
+          "Carts"
+        ],
+        "summary": "Obtener carrito del usuario",
+        "description": "Obtiene el carrito de compras del usuario autenticado",
+        "responses": {
+          "200": {
+            "description": "Carrito del usuario"
+          },
+          "401": {
+            "description": "No autenticado"
+          }
+        }
+      }
+    },
+    "/api/carts/add": {
+      "post": {
+        "tags": [
+          "Carts"
+        ],
+        "summary": "Agregar producto al carrito",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "productId"
+                ],
+                "properties": {
+                  "productId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439011"
+                  },
+                  "quantity": {
+                    "type": "number",
+                    "minimum": 1,
+                    "default": 1,
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Producto agregado al carrito"
+          },
+          "400": {
+            "description": "Error de validación o stock insuficiente"
+          },
+          "403": {
+            "description": "No puedes agregar tu propio producto"
+          }
+        }
+      }
+    },
+    "/api/carts/purchase": {
+      "post": {
+        "tags": [
+          "Carts"
+        ],
+        "summary": "Procesar compra del carrito",
+        "description": "Procesa la compra de todos los productos en el carrito",
+        "responses": {
+          "200": {
+            "description": "Compra procesada exitosamente"
+          },
+          "400": {
+            "description": "Carrito vacío o sin stock suficiente"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Obtener todos los usuarios (solo admin)",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user",
+                "premium",
+                "admin"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios"
+          },
+          "403": {
+            "description": "Sin permisos de administrador"
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Obtener usuario por ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario encontrado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Actualizar perfil de usuario",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil actualizado"
+          },
+          "403": {
+            "description": "Sin permisos"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Eliminar usuario (solo admin)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario eliminado"
+          },
+          "400": {
+            "description": "No puedes eliminar tu propia cuenta"
+          },
+          "403": {
+            "description": "Sin permisos de administrador"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid",
+        "description": "Autenticación basada en sesiones con cookie"
+      }
+    }
+  }
+}
+

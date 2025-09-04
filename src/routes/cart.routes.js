@@ -4,23 +4,16 @@ import AuthMiddleware from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-/**
- * 🛒 Rutas de Carritos
- */
-
-// 🛒 Obtener carrito del usuario autenticado
 router.get('/', AuthMiddleware.isAuthenticated, CartController.getCart);
-
-// ➕ Agregar producto al carrito
-router.post('/add', AuthMiddleware.isAuthenticated, CartController.addToCart);
-
-// ✏️ Actualizar cantidad de productos en carrito
-router.put('/products/:productId', AuthMiddleware.isAuthenticated, CartController.updateCartItem);
-
-// 🗑️ Eliminar producto del carrito
-router.delete('/products/:productId', AuthMiddleware.isAuthenticated, CartController.removeFromCart);
-
-// 🧹 Limpiar carrito completo
+router.post(
+  '/add',
+  AuthMiddleware.isAuthenticated,
+  AuthMiddleware.cannotAddOwnProduct,
+  CartController.addToCart
+);
+router.put('/products/:pid', AuthMiddleware.isAuthenticated, CartController.updateProductQuantity);
+router.delete('/products/:pid', AuthMiddleware.isAuthenticated, CartController.removeFromCart);
 router.delete('/clear', AuthMiddleware.isAuthenticated, CartController.clearCart);
+router.post('/purchase', AuthMiddleware.isAuthenticated, CartController.purchaseCart);
 
 export default router;

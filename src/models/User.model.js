@@ -27,10 +27,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
-      match: [
-        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        'Por favor ingresa un email válido',
-      ],
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Por favor ingresa un email válido'],
     },
     age: {
       type: Number,
@@ -65,7 +62,9 @@ const userSchema = new mongoose.Schema(
  */
 userSchema.pre('save', async function (next) {
   // Solo hashear la contraseña si ha sido modificada (o es nueva)
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) {
+    return next();
+  }
 
   try {
     const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;

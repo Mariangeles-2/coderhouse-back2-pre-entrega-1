@@ -1,7 +1,7 @@
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import dotenv from 'dotenv';
-import {logger} from '../utils/logger.util.js';
+import { logger } from '../utils/logger.util.js';
 
 dotenv.config();
 

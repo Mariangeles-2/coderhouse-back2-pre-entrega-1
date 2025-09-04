@@ -1,10 +1,42 @@
 {
   "info": {
-    "_postman_id": "ecommerce-backend-api-2024",
-    "name": "Ecommerce Backend API - Pre-entrega 1",
-    "description": "Colección completa para probar la API de Ecommerce Backend con autenticación y autorización",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "_postman_id": "ecommerce-backend-api-2025",
+    "name": "Ecommerce Backend API - Pre-entrega 1 (Actualizada)",
+    "description": "Colección completa actualizada para probar la API de Ecommerce Backend con autenticación, autorización y todos los endpoints optimizados",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": {
+      "major": 2,
+      "minor": 0,
+      "patch": 0
+    }
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cartId",
+      "value": "",
+      "type": "string"
+    }
+  ],
   "item": [
     {
       "name": "🏠 API Info",
@@ -24,6 +56,24 @@
               ]
             },
             "description": "Obtiene información general de la API y endpoints disponibles"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Swagger Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api-docs.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api-docs.json"
+              ]
+            },
+            "description": "Obtiene la especificación OpenAPI en formato JSON"
           },
           "response": []
         }
@@ -61,7 +111,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"first_name\": \"Juan\",\n    \"last_name\": \"Pérez\",\n    \"email\": \"juan.perez@example.com\",\n    \"age\": 25,\n    \"password\": \"password123\"\n}"
+              "raw": "{\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"email\": \"juan.perez@email.com\",\n  \"age\": 25,\n  \"password\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
@@ -106,7 +156,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"juan.perez@example.com\",\n    \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"juan.perez@email.com\",\n  \"password\": \"password123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -118,7 +168,26 @@
                 "login"
               ]
             },
-            "description": "Inicia sesión con un usuario existente"
+            "description": "Inicia sesión con credenciales de usuario"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "current"
+              ]
+            },
+            "description": "Obtiene información del usuario actualmente autenticado"
           },
           "response": []
         },
@@ -138,25 +207,6 @@
               ]
             },
             "description": "Verifica el estado de autenticación actual"
-          },
-          "response": []
-        },
-        {
-          "name": "Get User Profile",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "profile"
-              ]
-            },
-            "description": "Obtiene el perfil del usuario autenticado"
           },
           "response": []
         },
@@ -185,56 +235,41 @@
       "name": "👥 Usuarios",
       "item": [
         {
-          "name": "Get All Users (Admin Only)",
+          "name": "Get All Users (Admin only)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/users",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "users"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                },
-                {
-                  "key": "role",
-                  "value": "user",
-                  "disabled": true
-                }
               ]
             },
-            "description": "Obtiene lista de todos los usuarios (solo admin)"
+            "description": "Obtiene lista de todos los usuarios (solo administradores)"
           },
           "response": []
         },
         {
-          "name": "Get User by ID",
+          "name": "Get User Stats (Admin only)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "raw": "{{baseUrl}}/api/users/stats",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "users",
-                "{{userId}}"
+                "stats"
               ]
             },
-            "description": "Obtiene un usuario específico por ID"
+            "description": "Obtiene estadísticas de usuarios (solo administradores)"
           },
           "response": []
         },
@@ -250,7 +285,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"first_name\": \"Juan Carlos\",\n    \"last_name\": \"Pérez García\",\n    \"age\": 26\n}"
+              "raw": "{\n  \"firstName\": \"Juan Carlos\",\n  \"lastName\": \"Pérez García\",\n  \"age\": 26\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/{{userId}}",
@@ -263,12 +298,12 @@
                 "{{userId}}"
               ]
             },
-            "description": "Actualiza información de un usuario"
+            "description": "Actualiza información del usuario"
           },
           "response": []
         },
         {
-          "name": "Change User Role (Admin Only)",
+          "name": "Change User Role (Admin only)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -279,7 +314,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"role\": \"premium\"\n}"
+              "raw": "{\n  \"role\": \"premium\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/{{userId}}/role",
@@ -293,12 +328,12 @@
                 "role"
               ]
             },
-            "description": "Cambia el rol de un usuario (solo admin)"
+            "description": "Cambia el rol de un usuario (solo administradores)"
           },
           "response": []
         },
         {
-          "name": "Delete User (Admin Only)",
+          "name": "Delete User (Admin only)",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -313,7 +348,7 @@
                 "{{userId}}"
               ]
             },
-            "description": "Elimina un usuario (solo admin)"
+            "description": "Elimina un usuario del sistema (solo administradores)"
           },
           "response": []
         }
@@ -328,7 +363,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/products?page=1&limit=10&sort=createdAt&order=desc",
+              "raw": "{{baseUrl}}/api/products?page=1&limit=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -347,25 +382,17 @@
                 },
                 {
                   "key": "category",
-                  "value": "electronics",
-                  "disabled": true
-                },
-                {
-                  "key": "search",
-                  "value": "laptop",
+                  "value": "",
                   "disabled": true
                 },
                 {
                   "key": "sort",
-                  "value": "createdAt"
-                },
-                {
-                  "key": "order",
-                  "value": "desc"
+                  "value": "",
+                  "disabled": true
                 }
               ]
             },
-            "description": "Obtiene lista de productos con filtros y paginación"
+            "description": "Obtiene lista paginada de productos"
           },
           "response": []
         },
@@ -385,7 +412,7 @@
                 "{{productId}}"
               ]
             },
-            "description": "Obtiene un producto específico por ID"
+            "description": "Obtiene un producto específico por su ID"
           },
           "response": []
         },
@@ -417,7 +444,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Laptop Gaming RGB\",\n    \"description\": \"Laptop para gaming con iluminación RGB y alto rendimiento\",\n    \"price\": 1299.99,\n    \"thumbnail\": \"https://via.placeholder.com/300x300?text=Laptop+Gaming\",\n    \"code\": \"LAPTOP001\",\n    \"stock\": 15,\n    \"category\": \"electronics\"\n}"
+              "raw": "{\n  \"title\": \"Producto de Prueba\",\n  \"description\": \"Descripción del producto de prueba\",\n  \"code\": \"PROD001\",\n  \"price\": 29.99,\n  \"stock\": 100,\n  \"category\": \"Electrónicos\",\n  \"thumbnails\": [\"https://via.placeholder.com/300\"]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/products",
@@ -429,12 +456,12 @@
                 "products"
               ]
             },
-            "description": "Crea un nuevo producto (requiere rol premium o admin)"
+            "description": "Crea un nuevo producto (solo usuarios premium o administradores)"
           },
           "response": []
         },
         {
-          "name": "Update Product",
+          "name": "Update Product (Owner/Admin)",
           "request": {
             "method": "PUT",
             "header": [
@@ -445,7 +472,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Laptop Gaming RGB Pro\",\n    \"description\": \"Laptop para gaming profesional con iluminación RGB y alto rendimiento\",\n    \"price\": 1399.99,\n    \"stock\": 12\n}"
+              "raw": "{\n  \"title\": \"Producto Actualizado\",\n  \"description\": \"Descripción actualizada del producto\",\n  \"price\": 39.99,\n  \"stock\": 80\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/products/{{productId}}",
@@ -458,12 +485,12 @@
                 "{{productId}}"
               ]
             },
-            "description": "Actualiza un producto (solo propietario o admin)"
+            "description": "Actualiza un producto existente (solo propietario o administrador)"
           },
           "response": []
         },
         {
-          "name": "Delete Product",
+          "name": "Delete Product (Owner/Admin)",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -478,17 +505,54 @@
                 "{{productId}}"
               ]
             },
-            "description": "Elimina un producto (solo propietario o admin)"
+            "description": "Elimina un producto (solo propietario o administrador)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Products by Owner",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/owner/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "products",
+                "owner",
+                "{{userId}}"
+              ]
+            },
+            "description": "Obtiene productos creados por un usuario específico"
           },
           "response": []
         }
       ]
     },
     {
-      "name": "🛒 Carritos",
+      "name": "🛒 Carrito",
       "item": [
         {
           "name": "Get User Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.cart && response.cart._id) {",
+                  "        pm.collectionVariables.set('cartId', response.cart._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -518,7 +582,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"productId\": \"{{productId}}\",\n    \"quantity\": 2\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/carts/add",
@@ -531,12 +595,12 @@
                 "add"
               ]
             },
-            "description": "Agrega un producto al carrito"
+            "description": "Agrega un producto al carrito del usuario"
           },
           "response": []
         },
         {
-          "name": "Update Cart Item Quantity",
+          "name": "Update Product Quantity in Cart",
           "request": {
             "method": "PUT",
             "header": [
@@ -547,17 +611,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"quantity\": 3\n}"
+              "raw": "{\n  \"quantity\": 5\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/carts/products/{{productId}}",
+              "raw": "{{baseUrl}}/api/carts/product/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "carts",
-                "products",
+                "product",
                 "{{productId}}"
               ]
             },
@@ -571,14 +635,14 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/carts/products/{{productId}}",
+              "raw": "{{baseUrl}}/api/carts/product/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "carts",
-                "products",
+                "product",
                 "{{productId}}"
               ]
             },
@@ -602,109 +666,36 @@
                 "clear"
               ]
             },
-            "description": "Limpia completamente el carrito"
+            "description": "Vacía completamente el carrito del usuario"
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "🔧 Tests & Examples",
-      "item": [
+        },
         {
-          "name": "Test 404 Endpoint",
+          "name": "Purchase Cart",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/nonexistent",
+              "raw": "{{baseUrl}}/api/carts/purchase",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "nonexistent"
+                "carts",
+                "purchase"
               ]
             },
-            "description": "Prueba el manejo de endpoints no encontrados"
-          },
-          "response": []
-        },
-        {
-          "name": "Register Admin User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const response = pm.response.json();",
-                  "    if (response.user && response.user._id) {",
-                  "        pm.collectionVariables.set('adminId', response.user._id);",
-                  "    }",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"first_name\": \"Admin\",\n    \"last_name\": \"Sistema\",\n    \"email\": \"admin@ecommerce.com\",\n    \"age\": 30,\n    \"password\": \"admin123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
-            },
-            "description": "Registra un usuario admin para pruebas"
-          },
-          "response": []
-        },
-        {
-          "name": "Create Sample Products",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"title\": \"Smartphone Android\",\n    \"description\": \"Smartphone con Android último modelo\",\n    \"price\": 699.99,\n    \"thumbnail\": \"https://via.placeholder.com/300x300?text=Smartphone\",\n    \"code\": \"PHONE001\",\n    \"stock\": 25,\n    \"category\": \"electronics\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/products",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "products"
-              ]
-            },
-            "description": "Crea productos de ejemplo para pruebas"
+            "description": "Procesa la compra del carrito actual"
           },
           "response": []
         }
       ]
     }
   ],
+  "auth": {
+    "type": "noauth"
+  },
   "event": [
     {
       "listen": "prerequest",
@@ -724,33 +715,5 @@
         ]
       }
     }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080",
-      "type": "string"
-    },
-    {
-      "key": "userId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "productId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "adminId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "userEmail",
-      "value": "",
-      "type": "string"
-    }
   ]
 }
-

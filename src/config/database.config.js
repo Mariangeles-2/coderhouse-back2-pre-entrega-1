@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import {logger} from '../utils/logger.util.js';
+import { logger } from '../utils/logger.util.js';
 
 dotenv.config();
 
@@ -26,7 +26,6 @@ class DatabaseConfig {
       mongoose.connection.on('disconnected', () => {
         logger.warning('🔌 Desconectado de MongoDB');
       });
-
     } catch (error) {
       logger.error('❌ Error al conectar con MongoDB:', error);
       throw error;
