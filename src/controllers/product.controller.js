@@ -1,62 +1,46 @@
-import Product from '../models/Product.model.js';
-import { logger } from '../utils/logger.util.js';
 import { throwBadRequest, throwForbidden, throwNotFound } from '../middlewares/error.middleware.js';
+import productRepository from '../repositories/product.repository.js';
+import { logger } from '../utils/logger.util.js';
 
 /**
- * 🛍️ Controlador de Productos - Versión Simplificada
- * Usando express-async-errors + http-errors (librerías estándar)
+ * 🛍️ Controlador de Productos - Actualizado con Repository Pattern
+ * Usa Repository y DTOs para arquitectura profesional
  */
 class ProductController {
   /**
    * 📋 Obtener todos los productos
-   * ¡No más try-catch! express-async-errors lo maneja automáticamente
    */
   static async getAllProducts(req, res) {
-    const { page = 1, limit = 10, category, search, sort = 'createdAt' } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      category,
+      search,
+      sort = 'createdAt',
+      order = 'desc',
+    } = req.query;
 
-    // Construir query de filtros
-    const query = { status: true };
-    if (category) {
-      query.category = category;
-    }
-    if (search) {
-      query.$text = { $search: search };
-    }
+    const filters = { page, limit, category, search, sort, order };
+    const result = await productRepository.findAll(filters);
 
-    // Configurar ordenamiento
-    const sortOptions = {};
-    sortOptions[sort] = req.query.order === 'desc' ? -1 : 1;
-
-    const products = await Product.find(query)
-      .populate('owner', 'first_name last_name email')
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort(sortOptions);
-
-    const total = await Product.countDocuments(query);
-
-    logger.info(`📋 Lista de productos solicitada - Página: ${page}, Total: ${total}`);
+    logger.info(
+      `📋 Lista de productos solicitada - Página: ${page}, Total: ${result.pagination.total}`
+    );
 
     res.json({
       success: true,
-      products,
-      pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / limit),
-        total,
-      },
+      products: result.products,
+      pagination: result.pagination,
     });
   }
 
   /**
    * 🔍 Obtener producto por ID
-   * Mucho más simple que antes!
    */
   static async getProductById(req, res) {
     const { pid } = req.params;
 
-    const product = await Product.findById(pid).populate('owner', 'first_name last_name email');
-
+    const product = await productRepository.findById(pid);
     if (!product) {
       throwNotFound('Producto');
     }
@@ -75,30 +59,11 @@ class ProductController {
   static async createProduct(req, res) {
     const { title, description, price, stock, category } = req.body;
 
-    // Validaciones simples
-    if (!title) {
-      throwBadRequest('El título es requerido');
-    }
-    if (!description) {
-      throwBadRequest('La descripción es requerida');
-    }
-    if (!price || price <= 0) {
-      throwBadRequest('El precio debe ser mayor a 0');
-    }
-    if (!stock || stock < 0) {
-      throwBadRequest('El stock no puede ser negativo');
-    }
-    if (!category) {
-      throwBadRequest('La categoría es requerida');
-    }
+    // Validar datos requeridos
+    ProductController._validateRequiredFields({ title, description, price, stock, category });
 
     // Determinar propietario
-    let owner = null;
-    if (req.user.role === 'premium') {
-      owner = req.user._id;
-    } else if (req.user.role === 'admin') {
-      owner = req.body.owner || req.user._id;
-    }
+    const owner = ProductController._determineOwner(req.user, req.body.owner);
 
     const productData = {
       title,
@@ -111,8 +76,7 @@ class ProductController {
       owner,
     };
 
-    const product = await Product.create(productData);
-    await product.populate('owner', 'first_name last_name email');
+    const product = await productRepository.create(productData);
 
     logger.success(`✅ Producto creado: ${product.title} por ${req.user.email}`);
 
@@ -130,13 +94,13 @@ class ProductController {
     const { pid } = req.params;
     const updateData = req.body;
 
-    const product = await Product.findById(pid);
-    if (!product) {
+    const existingProduct = await productRepository.findById(pid);
+    if (!existingProduct) {
       throwNotFound('Producto');
     }
 
     // Verificar permisos
-    if (req.user.role === 'premium' && product.owner.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'premium' && existingProduct.owner.id !== req.user._id.toString()) {
       throwForbidden('Solo puedes actualizar productos de tu propiedad');
     }
 
@@ -153,10 +117,7 @@ class ProductController {
       delete updateData.owner;
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(pid, updateData, {
-      new: true,
-      runValidators: true,
-    }).populate('owner', 'first_name last_name email');
+    const updatedProduct = await productRepository.update(pid, updateData);
 
     logger.success(`✏️ Producto actualizado: ${updatedProduct.title} por ${req.user.email}`);
 
@@ -173,17 +134,17 @@ class ProductController {
   static async deleteProduct(req, res) {
     const { pid } = req.params;
 
-    const product = await Product.findById(pid);
+    const product = await productRepository.findById(pid);
     if (!product) {
       throwNotFound('Producto');
     }
 
     // Verificar permisos
-    if (req.user.role === 'premium' && product.owner.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'premium' && product.owner.id !== req.user._id.toString()) {
       throwForbidden('Solo puedes eliminar productos de tu propiedad');
     }
 
-    await Product.findByIdAndDelete(pid);
+    await productRepository.delete(pid);
 
     logger.success(`🗑️ Producto eliminado: ${product.title} por ${req.user.email}`);
 
@@ -194,7 +155,7 @@ class ProductController {
   }
 
   /**
-   * 📊 Obtener productos por propietario
+   * 📊 Obtener productos por propietario (para usuarios premium)
    */
   static async getProductsByOwner(req, res) {
     const ownerId = req.params.ownerId || req.user._id;
@@ -204,9 +165,7 @@ class ProductController {
       throwForbidden('Solo puedes ver tus propios productos');
     }
 
-    const products = await Product.find({ owner: ownerId })
-      .populate('owner', 'first_name last_name email')
-      .sort({ createdAt: -1 });
+    const products = await productRepository.findByOwner(ownerId);
 
     logger.info(`📊 Productos consultados para propietario: ${ownerId}`);
 
@@ -215,6 +174,27 @@ class ProductController {
       products,
       total: products.length,
     });
+  }
+
+  /**
+   * 🔧 Métodos privados para reducir complejidad
+   */
+  static _validateRequiredFields({ title, description, price, stock, category }) {
+    if (!title) throwBadRequest('El título es requerido');
+    if (!description) throwBadRequest('La descripción es requerida');
+    if (!price || price <= 0) throwBadRequest('El precio debe ser mayor a 0');
+    if (!stock || stock < 0) throwBadRequest('El stock no puede ser negativo');
+    if (!category) throwBadRequest('La categoría es requerida');
+  }
+
+  static _determineOwner(user, requestedOwner) {
+    if (user.role === 'premium') {
+      return user._id;
+    }
+    if (user.role === 'admin') {
+      return requestedOwner || user._id;
+    }
+    return null;
   }
 }
 

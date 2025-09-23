@@ -1,98 +1,141 @@
+import bcrypt from 'bcrypt';
 import passport from 'passport';
+
+import { UserDTO } from '../dto/index.js';
+import { throwBadRequest, throwUnauthorized } from '../middlewares/error.middleware.js';
+import userRepository from '../repositories/user.repository.js';
+import { jwtService } from '../utils/jwt.util.js';
 import { logger } from '../utils/logger.util.js';
-import {
-  throwBadRequest,
-  throwNotFound,
-  throwUnauthorized,
-} from '../middlewares/error.middleware.js';
+import { passwordResetService } from '../utils/passwordReset.util.js';
 
 /**
- * 🔐 Controlador de Autenticación - Versión Simplificada
- * Usando express-async-errors + http-errors (librerías estándar)
+ * 🔐 Controlador de Autenticación - Actualizado con Repository Pattern
+ * Usa Repository, DTOs y Services para arquitectura profesional
  */
 class AuthController {
   /**
-   * 👤 Procesar registro de usuario
+   * 📝 Registro de usuario
    */
-  static register(req, res, next) {
-    passport.authenticate('local-register', (err, user, info) => {
-      if (err) {
-        logger.error('❌ Error en registro:', err);
-        return next(err);
-      }
+  static async register(req, res) {
+    const { first_name, last_name, email, age, password } = req.body;
 
-      if (!user) {
-        logger.warning('⚠️ Fallo en registro:', info.message);
-        return next(throwBadRequest(info.message));
-      }
+    // Verificar si el usuario ya existe
+    const existingUser = await userRepository.findByEmail(email);
+    if (existingUser) {
+      throwBadRequest('El email ya está registrado');
+    }
 
-      req.logIn(user, (loginErr) => {
-        if (loginErr) {
-          logger.error('❌ Error al iniciar sesión después del registro:', loginErr);
-          return next(loginErr);
-        }
+    // 🎯 Determinar rol basado en el email (para pruebas y desarrollo)
+    let role = 'user'; // Por defecto
+    if (email.toLowerCase().includes('admin')) {
+      role = 'admin';
+      logger.info(`🔑 Asignando rol admin a: ${email}`);
+    } else if (email.toLowerCase().includes('premium')) {
+      role = 'premium';
+      logger.info(`🔑 Asignando rol premium a: ${email}`);
+    }
 
-        logger.success(`🎉 Usuario registrado y logueado: ${user.email}`);
-        return res.status(201).json({
-          success: true,
-          message: 'Usuario registrado exitosamente',
-          user: user.toPublicJSON(),
-        });
-      });
-    })(req, res, next);
+    // Crear usuario usando repository
+    const userData = {
+      first_name,
+      last_name,
+      email,
+      age: parseInt(age),
+      password,
+      role, // ✅ Incluir el rol determinado
+    };
+
+    const newUser = await userRepository.create(userData);
+
+    logger.success(`✅ Usuario registrado: ${newUser.email} con rol: ${newUser.role}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Usuario registrado exitosamente',
+      user: UserDTO.fromUser(newUser),
+    });
   }
 
   /**
-   * 🔑 Procesar login de usuario
+   * 🔑 Login de usuario
    */
   static login(req, res, next) {
-    passport.authenticate('local-login', (err, user, info) => {
+    passport.authenticate('local-login', async (err, user, info) => {
       if (err) {
-        logger.error('❌ Error en login:', err);
+        logger.error('❌ Error en autenticación:', err);
         return next(err);
       }
 
       if (!user) {
-        logger.warning('⚠️ Fallo en login:', info.message);
-        return next(throwBadRequest(info.message));
+        logger.warning(
+          `🚫 Intento de login fallido: ${req.body.email || 'email no proporcionado'}`
+        );
+
+        return res.status(401).json({
+          success: false,
+          message: info?.message || 'Credenciales inválidas',
+        });
       }
 
-      req.logIn(user, (loginErr) => {
-        if (loginErr) {
-          logger.error('❌ Error al establecer sesión:', loginErr);
-          return next(loginErr);
-        }
+      try {
+        // Generar tokens JWT
+        const tokens = jwtService.generateTokenPair(user);
 
-        logger.success(`✅ Usuario logueado: ${user.email}`);
-        return res.status(200).json({
-          success: true,
-          message: 'Login exitoso',
-          user: user.toPublicJSON(),
+        // Actualizar último login usando repository
+        await userRepository.update(user._id, { lastLogin: new Date() });
+
+        // Establecer sesión
+        req.login(user, (loginErr) => {
+          if (loginErr) {
+            logger.error('❌ Error estableciendo sesión:', loginErr);
+            return next(loginErr);
+          }
+
+          const userDTO = UserDTO.currentUser(user);
+
+          logger.success(`🔑 Login exitoso: ${user.email}`);
+
+          res.json({
+            success: true,
+            message: 'Login exitoso',
+            user: userDTO,
+            tokens,
+          });
         });
-      });
+      } catch (tokenError) {
+        logger.error('❌ Error generando tokens:', tokenError);
+        next(tokenError);
+      }
     })(req, res, next);
   }
 
   /**
    * 🚪 Logout de usuario
    */
-  static logout(req, res, next) {
-    const userEmail = req.user?.email || 'Desconocido';
+  static logout(req, res) {
+    const userEmail = req.user?.email || 'Usuario no identificado';
 
     req.logout((err) => {
       if (err) {
         logger.error('❌ Error en logout:', err);
-        return next(err);
+        return res.status(500).json({
+          success: false,
+          message: 'Error al cerrar sesión',
+        });
       }
 
       req.session.destroy((sessionErr) => {
         if (sessionErr) {
-          logger.error('❌ Error al destruir sesión:', sessionErr);
-          return next(sessionErr);
+          logger.error('❌ Error destruyendo sesión:', sessionErr);
+          return res.status(500).json({
+            success: false,
+            message: 'Error al destruir sesión',
+          });
         }
 
-        logger.info(`👋 Usuario deslogueado: ${userEmail}`);
-        res.status(200).json({
+        logger.info(`🚪 Logout exitoso: ${userEmail}`);
+
+        res.json({
           success: true,
           message: 'Logout exitoso',
         });
@@ -101,78 +144,160 @@ class AuthController {
   }
 
   /**
-   * 👤 Obtener usuario actual
+   * 👤 Usuario actual (ruta /current mejorada)
    */
-  static getCurrentUser(req, res) {
-    if (!req.isAuthenticated()) {
+  static async current(req, res) {
+    if (!req.user) {
       throwUnauthorized('No hay usuario autenticado');
     }
 
-    logger.info(`📱 Información de usuario solicitada: ${req.user.email}`);
-    res.status(200).json({
+    // Usar repository para obtener información actualizada y segura
+    const currentUser = await userRepository.getCurrentUser(req.user._id);
+
+    if (!currentUser) {
+      throwUnauthorized('Usuario no encontrado');
+    }
+
+    logger.info(`👤 Información de usuario actual solicitada: ${req.user.email}`);
+
+    res.json({
       success: true,
-      user: req.user.toPublicJSON(),
+      message: 'Usuario actual',
+      user: currentUser, // Ya es un DTO seguro sin información sensible
     });
   }
 
   /**
-   * 👤 Obtener usuario actual (alias para getCurrentUser)
+   * 🔄 Renovar token de acceso
    */
-  static getProfile(req, res, _next) {
-    return AuthController.getCurrentUser(req, res);
+  static async refreshToken(req, res) {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throwBadRequest('Refresh token requerido');
+    }
+
+    try {
+      // Verificar refresh token
+      const decoded = jwtService.verifyRefreshToken(refreshToken);
+
+      // Buscar usuario
+      const user = await userRepository.findByEmail(decoded.email);
+      if (!user) {
+        throwUnauthorized('Usuario no encontrado');
+      }
+
+      // Generar nuevo par de tokens
+      const tokens = jwtService.generateTokenPair(user);
+
+      logger.info(`🔄 Token renovado para: ${user.email}`);
+
+      res.json({
+        success: true,
+        message: 'Token renovado exitosamente',
+        tokens,
+      });
+    } catch (error) {
+      logger.warning(`🚫 Error renovando token: ${error.message}`);
+      throwUnauthorized('Refresh token inválido o expirado');
+    }
   }
 
   /**
-   * ✅ Verificar estado de autenticación
+   * 🔐 Solicitar recuperación de contraseña
    */
-  static checkAuth(req, res) {
-    if (req.isAuthenticated()) {
-      logger.info(`✅ Estado de auth verificado: ${req.user.email}`);
-      res.status(200).json({
-        success: true,
-        authenticated: true,
-        user: req.user.toPublicJSON(),
+  static async requestPasswordReset(req, res) {
+    const { email } = req.body;
+
+    if (!email) {
+      throwBadRequest('El email es requerido');
+    }
+
+    try {
+      const user = await userRepository.findByEmail(email);
+
+      if (!user) {
+        // Por seguridad, siempre respondemos éxito
+        return res.json({
+          success: true,
+          message: 'Si el email existe, recibirás un enlace de recuperación',
+        });
+      }
+
+      // Generar token con expiración de 1 hora
+      const { token, expires } = passwordResetService.generateResetToken();
+
+      // Actualizar usuario con token
+      await userRepository.update(user._id, {
+        passwordResetToken: token,
+        passwordResetExpires: expires,
       });
-    } else {
-      res.status(200).json({
+
+      // Enviar email (en un entorno real)
+      await passwordResetService.sendResetEmail(
+        user.email,
+        token,
+        `${user.first_name} ${user.last_name}`
+      );
+
+      logger.info(`🔐 Recuperación de contraseña solicitada para: ${user.email}`);
+
+      res.json({
         success: true,
-        authenticated: false,
-        user: null,
+        message: 'Email de recuperación enviado exitosamente',
       });
+    } catch (error) {
+      logger.error('❌ Error en recuperación de contraseña:', error);
+      throw error;
     }
   }
 
   /**
-   * 🔄 Cambiar rol de usuario (solo admin)
+   * 🔒 Restablecer contraseña
    */
-  static async changeUserRole(req, res) {
-    const { userId, newRole } = req.body;
+  static async resetPassword(req, res) {
+    const { token, newPassword } = req.body;
 
-    if (!userId || !newRole) {
-      throwBadRequest('userId y newRole son requeridos');
+    if (!token || !newPassword) {
+      throwBadRequest('Token y nueva contraseña son requeridos');
     }
 
-    if (!['user', 'premium', 'admin'].includes(newRole)) {
-      throwBadRequest('Rol inválido. Debe ser: user, premium o admin');
-    }
-
-    const User = (await import('../models/User.model.js')).default;
-    const user = await User.findById(userId);
+    const user = await userRepository.findByResetToken(token);
 
     if (!user) {
-      throwNotFound('Usuario');
+      throwBadRequest('Token inválido o expirado');
     }
 
-    const oldRole = user.role;
-    user.role = newRole;
-    await user.save();
+    // Verificar que el token no haya expirado
+    if (!passwordResetService.isTokenValid(user.passwordResetExpires)) {
+      throwBadRequest('El token ha expirado. Solicita uno nuevo');
+    }
 
-    logger.success(`🔄 Rol cambiado para ${user.email}: ${oldRole} → ${newRole}`);
+    // Validar que la nueva contraseña sea diferente a la anterior
+    await passwordResetService.validateNewPassword(newPassword, user.password);
 
-    res.status(200).json({
+    // Hashear nueva contraseña
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Actualizar contraseña y limpiar tokens
+    await userRepository.update(user._id, {
+      password: hashedPassword,
+      passwordResetToken: undefined,
+      passwordResetExpires: undefined,
+    });
+
+    // Enviar confirmación
+    await passwordResetService.sendPasswordChangedConfirmation(
+      user.email,
+      `${user.first_name} ${user.last_name}`
+    );
+
+    logger.success(`🔒 Contraseña restablecida exitosamente para: ${user.email}`);
+
+    res.json({
       success: true,
-      message: `Rol actualizado de ${oldRole} a ${newRole}`,
-      user: user.toPublicJSON(),
+      message: 'Contraseña restablecida exitosamente',
     });
   }
 }

@@ -1,5 +1,6 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+
 import { logger } from '../utils/logger.util.js';
 
 dotenv.config();
@@ -33,4 +34,4 @@ class DatabaseConfig {
   }
 }
 
-export const connectToDatabase = DatabaseConfig.connectToDatabase;
+export const { connectToDatabase } = DatabaseConfig;

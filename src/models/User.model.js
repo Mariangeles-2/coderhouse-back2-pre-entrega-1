@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
+import mongoose from 'mongoose';
 
 /**
  * 👤 Modelo de Usuario para el Ecommerce
- * Incluye todos los campos requeridos según las especificaciones
+ * Incluye todos los campos requeridos según las especificaciones + seguridad mejorada
  */
 const userSchema = new mongoose.Schema(
   {
@@ -27,18 +27,22 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Por favor ingresa un email válido'],
+      match: [
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        'Por favor ingresa un email válido',
+      ],
     },
     age: {
       type: Number,
       required: [true, 'La edad es obligatoria'],
-      min: [13, 'Debes tener al menos 13 años'],
-      max: [120, 'La edad máxima es 120 años'],
+      min: [18, 'Debes tener al menos 18 años para registrarte'],
+      max: [100, 'La edad máxima es 100 años'],
     },
     password: {
       type: String,
       required: [true, 'La contraseña es obligatoria'],
-      minlength: [6, 'La contraseña debe tener al menos 6 caracteres'],
+      minlength: [8, 'La contraseña debe tener al menos 8 caracteres'],
+      maxlength: [50, 'La contraseña no puede exceder 50 caracteres'],
     },
     cart: {
       type: mongoose.Schema.Types.ObjectId,
@@ -49,6 +53,31 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['user', 'admin', 'premium'],
       default: 'user',
+    },
+    // 🔐 Campos para recuperación de contraseñas
+    passwordResetToken: {
+      type: String,
+      default: undefined,
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: undefined,
+    },
+    // 📊 Campos de seguridad adicionales
+    lastLogin: {
+      type: Date,
+      default: Date.now,
+    },
+    loginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
@@ -67,7 +96,7 @@ userSchema.pre('save', async function (next) {
   }
 
   try {
-    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
     this.password = await bcrypt.hash(this.password, saltRounds);
     next();
   } catch (error) {
@@ -78,8 +107,47 @@ userSchema.pre('save', async function (next) {
 /**
  * 🔍 Método para comparar contraseñas
  */
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+/**
+ * 🔒 Método para verificar si la cuenta está bloqueada
+ */
+userSchema.methods.isLocked = function () {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
+/**
+ * 🔐 Método para incrementar intentos de login fallidos
+ */
+userSchema.methods.incLoginAttempts = function () {
+  // Si tenemos un lock previo y ya expiró, reiniciar
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return this.updateOne({
+      $unset: { lockUntil: 1 },
+      $set: { loginAttempts: 1 },
+    });
+  }
+
+  const updates = { $inc: { loginAttempts: 1 } };
+
+  // Si llegamos al máximo de intentos y no estamos bloqueados, bloquear
+  if (this.loginAttempts + 1 >= 5 && !this.isLocked()) {
+    updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // 2 horas
+  }
+
+  return this.updateOne(updates);
+};
+
+/**
+ * ✅ Método para resetear intentos de login tras login exitoso
+ */
+userSchema.methods.resetLoginAttempts = function () {
+  return this.updateOne({
+    $unset: { loginAttempts: 1, lockUntil: 1 },
+    $set: { lastLogin: Date.now() },
+  });
 };
 
 /**
@@ -88,6 +156,10 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 userSchema.methods.toPublicJSON = function () {
   const userObject = this.toObject();
   delete userObject.password;
+  delete userObject.passwordResetToken;
+  delete userObject.passwordResetExpires;
+  delete userObject.loginAttempts;
+  delete userObject.lockUntil;
   return userObject;
 };
 
@@ -99,9 +171,21 @@ userSchema.statics.findByEmail = function (email) {
 };
 
 /**
+ * 🔍 Método para buscar usuario por token de recuperación
+ */
+userSchema.statics.findByResetToken = function (token) {
+  return this.findOne({
+    passwordResetToken: token,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+};
+
+/**
  * 🏷️ Índices para optimización
  */
 userSchema.index({ role: 1 });
+userSchema.index({ passwordResetToken: 1 });
+userSchema.index({ passwordResetExpires: 1 });
 
 const User = mongoose.model('User', userSchema);
 

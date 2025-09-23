@@ -1,26 +1,31 @@
-import express from 'express';
-import methodOverride from 'method-override';
-import dotenv from 'dotenv';
-import 'express-async-errors'; // 🎯 Esto maneja TODOS los errores async automáticamente!
-import swaggerUi from 'swagger-ui-express';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
-// 📦 Importar configuraciones
+import cors from 'cors';
+import dotenv from 'dotenv';
+import express from 'express';
+import 'express-async-errors'; // 🎯 Esto maneja TODOS los errores async automáticamente!
+import helmet from 'helmet';
+import methodOverride from 'method-override';
+import swaggerUi from 'swagger-ui-express';
+
 import { connectToDatabase } from './config/database.config.js';
-import { configureSession } from './config/session.config.js';
 import { configurePassport } from './config/passport.config.js';
-import { logger } from './utils/logger.util.js';
-
-// 🚨 Importar sistema simplificado de errores
+import { configureSession } from './config/session.config.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
-
-// 📁 Importar rutas
+import { generalLimiter } from './middlewares/rateLimiter.middleware.js';
+import {
+  corsOptions,
+  helmetOptions,
+  requestLogger,
+  securityHeaders,
+} from './middlewares/security.middleware.js';
 import authRoutes from './routes/auth.routes.js';
-import userRoutes from './routes/user.routes.js';
-import productRoutes from './routes/product.routes.js';
 import cartRoutes from './routes/cart.routes.js';
+import productRoutes from './routes/product.routes.js';
+import userRoutes from './routes/user.routes.js';
+import { logger } from './utils/logger.util.js';
 
 // 📚 Cargar documentación Swagger
 const __filename = fileURLToPath(import.meta.url);
@@ -29,7 +34,7 @@ const swaggerDocument = JSON.parse(
   fs.readFileSync(join(__dirname, '../docs/api/swagger.json'), 'utf8')
 );
 
-// Configurar dotenv
+// Configurar dotenv ANTES de todo
 dotenv.config();
 
 class EcommerceApp {
@@ -44,7 +49,10 @@ class EcommerceApp {
       // 🔌 Conectar a la base de datos
       await connectToDatabase();
 
-      // ⚙️ Configurar middlewares
+      // 🛡️ Configurar seguridad HTTP
+      this.configureSecurity();
+
+      // ⚙️ Configurar middlewares básicos
       this.configureMiddlewares();
 
       // 🔐 Configurar autenticación
@@ -67,10 +75,29 @@ class EcommerceApp {
     }
   }
 
+  configureSecurity() {
+    // 🛡️ Helmet para headers de seguridad
+    this.app.use(helmet(helmetOptions));
+
+    // 🌐 CORS configurado
+    this.app.use(cors(corsOptions));
+
+    // 🔒 Headers de seguridad personalizados
+    this.app.use(securityHeaders);
+
+    // 📊 Logging de requests para seguridad
+    this.app.use(requestLogger);
+
+    // 🚫 Rate limiting general
+    this.app.use(generalLimiter);
+
+    logger.info('🛡️ Configuración de seguridad HTTP aplicada');
+  }
+
   configureMiddlewares() {
     // 📊 Middleware para parsear JSON y URL encoded
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(express.json({ limit: '10mb' }));
+    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
     // 🔧 Method override para formularios HTML
     this.app.use(methodOverride('_method'));
@@ -86,29 +113,52 @@ class EcommerceApp {
    * 📚 Configurar documentación Swagger
    */
   configureSwagger() {
-    // Swagger UI endpoint
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+    // Solo mostrar Swagger en desarrollo o si está explícitamente habilitado
+    const showSwagger =
+      process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER_IN_PRODUCTION === 'true';
 
-    // JSON de la especificación OpenAPI
-    this.app.get('/api-docs.json', (req, res) => {
-      res.setHeader('Content-Type', 'application/json');
-      res.send(swaggerDocument);
-    });
+    if (showSwagger) {
+      // Swagger UI endpoint
+      this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-    logger.info('📚 Documentación Swagger configurada en /api-docs');
+      // JSON de la especificación OpenAPI
+      this.app.get('/api-docs.json', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.send(swaggerDocument);
+      });
+
+      logger.info('📚 Documentación Swagger configurada en /api-docs');
+    } else {
+      logger.info('📚 Documentación Swagger deshabilitada en producción');
+    }
   }
 
   configureRoutes() {
     // 🛣️ Ruta principal - API info con links a documentación
     this.app.get('/', (req, res) => {
+      const showSwagger =
+        process.env.NODE_ENV !== 'production' ||
+        process.env.ENABLE_SWAGGER_IN_PRODUCTION === 'true';
+
       res.json({
         success: true,
-        message: '🛍️ Ecommerce Backend API',
-        version: '1.0.0',
-        documentation: {
-          swagger: `http://localhost:${this.port}/api-docs`,
-          openapi_json: `http://localhost:${this.port}/api-docs.json`,
+        message: '🛍️ Ecommerce Backend API - Versión Segura',
+        version: '2.0.0',
+        security: {
+          jwt: 'Autenticación JWT implementada',
+          rateLimit: 'Protección anti fuerza bruta activa',
+          validation: 'Validación de entrada con Joi',
+          cors: 'CORS configurado',
+          helmet: 'Headers de seguridad aplicados',
         },
+        documentation: showSwagger
+          ? {
+              swagger: `http://localhost:${this.port}/api-docs`,
+              openapi_json: `http://localhost:${this.port}/api-docs.json`,
+            }
+          : {
+              message: 'Documentación disponible solo en desarrollo',
+            },
         endpoints: {
           auth: '/auth',
           users: '/api/users',
@@ -145,11 +195,32 @@ class EcommerceApp {
     this.app.listen(this.port, () => {
       logger.success(`🚀 Servidor corriendo en puerto ${this.port}`);
       logger.info(`📍 API disponible en: http://localhost:${this.port}`);
-      logger.info(`📚 Documentación Swagger: http://localhost:${this.port}/api-docs`);
-      logger.info(`🔗 OpenAPI JSON: http://localhost:${this.port}/api-docs.json`);
+
+      const showSwagger =
+        process.env.NODE_ENV !== 'production' ||
+        process.env.ENABLE_SWAGGER_IN_PRODUCTION === 'true';
+
+      if (showSwagger) {
+        logger.info(`📚 Documentación Swagger: http://localhost:${this.port}/api-docs`);
+        logger.info(`🔗 OpenAPI JSON: http://localhost:${this.port}/api-docs.json`);
+      }
+
+      logger.info('🛡️ Características de seguridad:');
+      logger.info('  ✅ JWT con access/refresh tokens');
+      logger.info('  ✅ Rate limiting anti fuerza bruta');
+      logger.info('  ✅ Validación de entrada con Joi');
+      logger.info('  ✅ Headers de seguridad HTTP');
+      logger.info('  ✅ CORS configurado');
+      logger.info('  ✅ Recuperación de contraseñas');
+      logger.info('  ✅ Políticas de contraseñas robustas');
     });
   }
 }
 
-// 🎯 Inicializar aplicación
-new EcommerceApp();
+// 🎯 Inicializar aplicación si no estamos en testing
+if (process.env.NODE_ENV !== 'test') {
+  new EcommerceApp();
+}
+
+// Exportar la aplicación para testing
+export default new EcommerceApp().app;

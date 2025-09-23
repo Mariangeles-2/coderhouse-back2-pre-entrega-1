@@ -1,7 +1,8 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import User from '../models/User.model.js';
+
 import Cart from '../models/Cart.model.js';
+import User from '../models/User.model.js';
 import { logger } from '../utils/logger.util.js';
 
 /**

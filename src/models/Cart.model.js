@@ -51,9 +51,7 @@ const cartSchema = new mongoose.Schema(
  * 💰 Middleware para calcular el total
  */
 cartSchema.pre('save', function (next) {
-  this.totalAmount = this.products.reduce((total, item) => {
-    return total + item.price * item.quantity;
-  }, 0);
+  this.totalAmount = this.products.reduce((total, item) => total + item.price * item.quantity, 0);
   next();
 });
 

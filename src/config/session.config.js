@@ -1,6 +1,7 @@
-import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import dotenv from 'dotenv';
+import session from 'express-session';
+
 import { logger } from '../utils/logger.util.js';
 
 dotenv.config();
@@ -8,7 +9,7 @@ dotenv.config();
 /**
  * 🔐 Configuración de sesiones
  */
-function configureSession(app) {
+const configureSession = (app) => {
   try {
     const sessionConfig = {
       secret: process.env.SESSION_SECRET || 'mi_secreto_super_seguro',
@@ -31,6 +32,6 @@ function configureSession(app) {
     logger.error('❌ Error al configurar sesiones:', error);
     throw error;
   }
-}
+};
 
 export { configureSession };

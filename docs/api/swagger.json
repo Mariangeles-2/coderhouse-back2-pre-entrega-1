@@ -1,9 +1,13 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "🛍️ Ecommerce Backend API",
-    "version": "1.0.0",
-    "description": "API REST para un sistema de ecommerce con autenticación, gestión de productos, carritos y usuarios."
+    "title": "🛍️ Ecommerce Backend API - Entrega Final",
+    "version": "3.0.0",
+    "description": "API REST con arquitectura profesional: Repository Pattern, DTOs, autorización granular, sistema de tickets y recuperación de contraseñas con expiración.",
+    "contact": {
+      "name": "Angie Somma",
+      "email": "angie.somma@example.com"
+    }
   },
   "servers": [
     {
@@ -14,21 +18,348 @@
   "tags": [
     {
       "name": "Authentication",
-      "description": "Endpoints de autenticación y gestión de sesiones"
+      "description": "🔐 Autenticación JWT, registro, login y recuperación con expiración de 1 hora"
     },
     {
       "name": "Products",
-      "description": "CRUD de productos del ecommerce"
+      "description": "🛍️ CRUD de productos - Solo admin puede modificar"
     },
     {
       "name": "Carts",
-      "description": "Gestión de carritos de compra"
+      "description": "🛒 Gestión de carritos - Solo usuarios (no admins)"
     },
     {
       "name": "Users",
-      "description": "Gestión de usuarios y perfiles"
+      "description": "👥 Gestión de usuarios y perfiles con DTOs seguros"
+    },
+    {
+      "name": "Tickets",
+      "description": "🎫 Sistema robusto de tickets de compra"
     }
   ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token JWT de acceso. Formato: Authorization: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "UserDTO": {
+        "type": "object",
+        "description": "DTO seguro del usuario sin información sensible",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "64a1b2c3d4e5f6789012345"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Juan"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Pérez"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Juan Pérez"
+          },
+          "email": {
+            "type": "string",
+            "example": "juan@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "premium",
+              "admin"
+            ],
+            "example": "user"
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "lastLogin": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "read:own-profile",
+              "create:cart",
+              "read:products"
+            ]
+          }
+        }
+      },
+      "ProductDTO": {
+        "type": "object",
+        "description": "DTO de producto con información completa",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "64a1b2c3d4e5f6789012345"
+          },
+          "title": {
+            "type": "string",
+            "example": "Smartphone Galaxy"
+          },
+          "description": {
+            "type": "string",
+            "example": "Smartphone de última generación"
+          },
+          "price": {
+            "type": "number",
+            "example": 599.99
+          },
+          "stock": {
+            "type": "integer",
+            "example": 50
+          },
+          "category": {
+            "type": "string",
+            "example": "electronics"
+          },
+          "code": {
+            "type": "string",
+            "example": "PROD-1640995200000"
+          },
+          "thumbnails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "boolean",
+            "example": true
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string",
+                "example": "Admin User"
+              },
+              "email": {
+                "type": "string",
+                "example": "admin@example.com"
+              }
+            }
+          }
+        }
+      },
+      "CartDTO": {
+        "type": "object",
+        "description": "DTO de carrito con productos y totales calculados",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "64a1b2c3d4e5f6789012345"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "price": {
+                      "type": "number"
+                    },
+                    "thumbnail": {
+                      "type": "string"
+                    },
+                    "stock": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "quantity": {
+                  "type": "integer",
+                  "example": 2
+                },
+                "subtotal": {
+                  "type": "number",
+                  "example": 1199.98
+                }
+              }
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 1199.98
+          },
+          "totalItems": {
+            "type": "integer",
+            "example": 2
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          }
+        }
+      },
+      "Ticket": {
+        "type": "object",
+        "description": "Ticket de compra robusto con información completa",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "TICKET-1640995200000-ABC123"
+          },
+          "purchase_datetime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "amount": {
+            "type": "number",
+            "example": 1199.98
+          },
+          "purchaser": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "quantity": {
+                  "type": "integer"
+                },
+                "subtotal": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "failedProducts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product": {
+                  "type": "string"
+                },
+                "requestedQuantity": {
+                  "type": "integer"
+                },
+                "availableStock": {
+                  "type": "integer"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed",
+              "cancelled",
+              "refunded"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "type": "number"
+              },
+              "tax": {
+                "type": "number"
+              },
+              "shipping": {
+                "type": "number"
+              },
+              "total": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ValidationError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "statusCode": {
+                "type": "integer",
+                "example": 400
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
   "paths": {
     "/auth/register": {
       "post": {
@@ -36,7 +367,7 @@
           "Authentication"
         ],
         "summary": "Registrar nuevo usuario",
-        "description": "Permite registrar un nuevo usuario en el sistema",
+        "description": "Crea una nueva cuenta de usuario con validaciones robustas",
         "requestBody": {
           "required": true,
           "content": {
@@ -47,8 +378,8 @@
                   "first_name",
                   "last_name",
                   "email",
-                  "password",
-                  "age"
+                  "age",
+                  "password"
                 ],
                 "properties": {
                   "first_name": {
@@ -62,18 +393,17 @@
                   "email": {
                     "type": "string",
                     "format": "email",
-                    "example": "juan.perez@email.com"
+                    "example": "juan@example.com"
+                  },
+                  "age": {
+                    "type": "integer",
+                    "minimum": 18,
+                    "example": 25
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 6,
-                    "example": "password123"
-                  },
-                  "age": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 120,
-                    "example": 25
+                    "minLength": 8,
+                    "example": "MiPassword123!"
                   }
                 }
               }
@@ -82,10 +412,32 @@
         },
         "responses": {
           "201": {
-            "description": "Usuario registrado exitosamente"
+            "description": "Usuario registrado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/UserDTO"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           },
           "400": {
-            "description": "Error de validación"
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictError"
           }
         }
       }
@@ -96,7 +448,7 @@
           "Authentication"
         ],
         "summary": "Iniciar sesión",
-        "description": "Permite a un usuario iniciar sesión en el sistema",
+        "description": "Autenticación con email y contraseña, retorna JWT tokens",
         "requestBody": {
           "required": true,
           "content": {
@@ -110,12 +462,10 @@
                 "properties": {
                   "email": {
                     "type": "string",
-                    "format": "email",
-                    "example": "juan.perez@email.com"
+                    "format": "email"
                   },
                   "password": {
-                    "type": "string",
-                    "example": "password123"
+                    "type": "string"
                   }
                 }
               }
@@ -124,58 +474,165 @@
         },
         "responses": {
           "200": {
-            "description": "Login exitoso"
+            "description": "Login exitoso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/UserDTO"
+                        },
+                        "tokens": {
+                          "type": "object",
+                          "properties": {
+                            "accessToken": {
+                              "type": "string"
+                            },
+                            "refreshToken": {
+                              "type": "string"
+                            },
+                            "expiresIn": {
+                              "type": "string",
+                              "example": "15m"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           },
-          "400": {
-            "description": "Credenciales inválidas"
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
           }
         }
       }
     },
-    "/auth/logout": {
+    "/auth/current": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Información del usuario actual",
+        "description": "Retorna información segura del usuario autenticado (DTO sin datos sensibles)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Información del usuario actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "$ref": "#/components/schemas/UserDTO"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
       "post": {
         "tags": [
           "Authentication"
         ],
-        "summary": "Cerrar sesión",
-        "description": "Permite a un usuario cerrar su sesión actual",
+        "summary": "Solicitar recuperación de contraseña",
+        "description": "Envía email con token que expira en 1 hora",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Logout exitoso"
-          },
-          "401": {
-            "description": "No autenticado"
+            "description": "Email de recuperación enviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/auth/profile": {
-      "get": {
+    "/auth/reset-password": {
+      "post": {
         "tags": [
           "Authentication"
         ],
-        "summary": "Obtener perfil del usuario actual",
-        "description": "Obtiene la información del usuario autenticado",
-        "responses": {
-          "200": {
-            "description": "Perfil del usuario"
-          },
-          "401": {
-            "description": "No autenticado"
+        "summary": "Restablecer contraseña",
+        "description": "Cambia contraseña usando token (debe ser diferente a la anterior)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token",
+                  "newPassword"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                }
+              }
+            }
           }
-        }
-      }
-    },
-    "/auth/check": {
-      "get": {
-        "tags": [
-          "Authentication"
-        ],
-        "summary": "Verificar estado de autenticación",
-        "description": "Verifica si el usuario está autenticado",
+        },
         "responses": {
           "200": {
-            "description": "Estado de autenticación"
+            "$ref": "#/components/responses/SuccessResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           }
         }
       }
@@ -185,8 +642,8 @@
         "tags": [
           "Products"
         ],
-        "summary": "Obtener todos los productos",
-        "description": "Lista todos los productos con paginación y filtros",
+        "summary": "Obtener productos (público)",
+        "description": "Lista productos con filtros y paginación",
         "parameters": [
           {
             "name": "page",
@@ -217,11 +674,63 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Lista de productos"
+            "description": "Lista de productos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProductDTO"
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "current": {
+                          "type": "integer"
+                        },
+                        "pages": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -229,8 +738,13 @@
         "tags": [
           "Products"
         ],
-        "summary": "Crear nuevo producto",
-        "description": "Permite crear un nuevo producto (solo usuarios premium y admin)",
+        "summary": "Crear producto (solo admin)",
+        "description": "Solo administradores pueden crear productos",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -247,25 +761,33 @@
                 "properties": {
                   "title": {
                     "type": "string",
-                    "example": "iPhone 15 Pro"
+                    "example": "Smartphone Galaxy"
                   },
                   "description": {
                     "type": "string",
-                    "example": "Smartphone Apple con chip A17 Pro"
+                    "example": "Smartphone de última generación"
                   },
                   "price": {
                     "type": "number",
-                    "minimum": 0,
-                    "example": 999.99
+                    "example": 599.99
                   },
                   "stock": {
-                    "type": "number",
-                    "minimum": 0,
+                    "type": "integer",
                     "example": 50
                   },
                   "category": {
                     "type": "string",
-                    "example": "smartphones"
+                    "example": "electronics"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "PROD-GALAXY-001"
+                  },
+                  "thumbnails": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -274,95 +796,35 @@
         },
         "responses": {
           "201": {
-            "description": "Producto creado exitosamente"
+            "description": "Producto creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "product": {
+                          "$ref": "#/components/schemas/ProductDTO"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           },
           "400": {
-            "description": "Error de validación"
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
-            "description": "No autenticado"
-          }
-        }
-      }
-    },
-    "/api/products/{pid}": {
-      "get": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "Obtener producto por ID",
-        "parameters": [
-          {
-            "name": "pid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Producto encontrado"
-          },
-          "404": {
-            "description": "Producto no encontrado"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "Actualizar producto",
-        "description": "Actualiza un producto existente (solo propietario o admin)",
-        "parameters": [
-          {
-            "name": "pid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Producto actualizado"
+            "$ref": "#/components/responses/UnauthorizedError"
           },
           "403": {
-            "description": "Sin permisos"
-          },
-          "404": {
-            "description": "Producto no encontrado"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Products"
-        ],
-        "summary": "Eliminar producto",
-        "description": "Elimina un producto (solo propietario o admin)",
-        "parameters": [
-          {
-            "name": "pid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Producto eliminado"
-          },
-          "403": {
-            "description": "Sin permisos"
-          },
-          "404": {
-            "description": "Producto no encontrado"
+            "$ref": "#/components/responses/ForbiddenError"
           }
         }
       }
@@ -373,23 +835,56 @@
           "Carts"
         ],
         "summary": "Obtener carrito del usuario",
-        "description": "Obtiene el carrito de compras del usuario autenticado",
+        "description": "Solo usuarios autenticados (no admins) pueden acceder",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Carrito del usuario"
+            "description": "Carrito del usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "cart": {
+                          "$ref": "#/components/schemas/CartDTO"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           },
           "401": {
-            "description": "No autenticado"
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
           }
         }
       }
     },
-    "/api/carts/add": {
+    "/api/carts/product": {
       "post": {
         "tags": [
           "Carts"
         ],
         "summary": "Agregar producto al carrito",
+        "description": "Solo usuarios (no admins) pueden agregar productos",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -402,13 +897,13 @@
                 "properties": {
                   "productId": {
                     "type": "string",
-                    "example": "507f1f77bcf86cd799439011"
+                    "example": "64a1b2c3d4e5f6789012345"
                   },
                   "quantity": {
-                    "type": "number",
+                    "type": "integer",
                     "minimum": 1,
-                    "default": 1,
-                    "example": 2
+                    "maximum": 100,
+                    "default": 1
                   }
                 }
               }
@@ -416,14 +911,39 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Producto agregado al carrito"
+          "200": {
+            "description": "Producto agregado al carrito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "cart": {
+                          "$ref": "#/components/schemas/CartDTO"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           },
           "400": {
-            "description": "Error de validación o stock insuficiente"
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
           },
           "403": {
-            "description": "No puedes agregar tu propio producto"
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
           }
         }
       }
@@ -434,156 +954,176 @@
           "Carts"
         ],
         "summary": "Procesar compra del carrito",
-        "description": "Procesa la compra de todos los productos en el carrito",
+        "description": "Genera ticket robusto con manejo de stock y compras parciales",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Compra procesada exitosamente"
+            "description": "Compra procesada (completa o parcial)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "ticket": {
+                          "$ref": "#/components/schemas/Ticket"
+                        },
+                        "failedProducts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "product": {
+                                "type": "string"
+                              },
+                              "requested": {
+                                "type": "integer"
+                              },
+                              "available": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           },
           "400": {
-            "description": "Carrito vacío o sin stock suficiente"
-          }
-        }
-      }
-    },
-    "/api/users": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Obtener todos los usuarios (solo admin)",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
+            "$ref": "#/components/responses/ValidationError"
           },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
-          },
-          {
-            "name": "role",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "user",
-                "premium",
-                "admin"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Lista de usuarios"
-          },
-          "403": {
-            "description": "Sin permisos de administrador"
-          }
-        }
-      }
-    },
-    "/api/users/{id}": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Obtener usuario por ID",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Usuario encontrado"
-          },
-          "403": {
-            "description": "Sin permisos"
-          },
-          "404": {
-            "description": "Usuario no encontrado"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Actualizar perfil de usuario",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Perfil actualizado"
-          },
-          "403": {
-            "description": "Sin permisos"
-          },
-          "404": {
-            "description": "Usuario no encontrado"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Eliminar usuario (solo admin)",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Usuario eliminado"
-          },
-          "400": {
-            "description": "No puedes eliminar tu propia cuenta"
-          },
-          "403": {
-            "description": "Sin permisos de administrador"
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
           }
         }
       }
     }
   },
   "components": {
-    "securitySchemes": {
-      "sessionAuth": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "connect.sid",
-        "description": "Autenticación basada en sesiones con cookie"
+    "responses": {
+      "SuccessResponse": {
+        "description": "Operación exitosa",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiResponse"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Error de validación",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "description": "No autorizado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 401
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Acceso prohibido",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 403
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "NotFoundError": {
+        "description": "Recurso no encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 404
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ConflictError": {
+        "description": "Conflicto (recurso ya existe)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "statusCode": {
+                      "type": "integer",
+                      "example": 409
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }
 }
-
