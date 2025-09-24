@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 
-/**
- * 🛒 Modelo de Carrito de Compras
- */
+// Modelo de carrito de compras
 const cartSchema = new mongoose.Schema(
   {
     user: {
@@ -47,24 +45,18 @@ const cartSchema = new mongoose.Schema(
   }
 );
 
-/**
- * 💰 Middleware para calcular el total
- */
+// Middleware para calcular el total
 cartSchema.pre('save', function (next) {
   this.totalAmount = this.products.reduce((total, item) => total + item.price * item.quantity, 0);
   next();
 });
 
-/**
- * 📊 Método para obtener el total de items
- */
+// Método para obtener el total de items
 cartSchema.methods.getTotalItems = function () {
   return this.products.reduce((total, item) => total + item.quantity, 0);
 };
 
-/**
- * 🏷️ Índices para optimización
- */
+// Índices para optimización
 cartSchema.index({ user: 1 });
 cartSchema.index({ status: 1 });
 

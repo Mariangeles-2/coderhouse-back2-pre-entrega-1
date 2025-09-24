@@ -5,14 +5,10 @@ import userRepository from '../repositories/user.repository.js';
 import { logger } from '../utils/logger.util.js';
 import { passwordResetService } from '../utils/passwordReset.util.js';
 
-/**
- * 👤 Controlador de Usuarios - Actualizado con Repository Pattern y DTOs
- */
+// Controlador de usuarios con Repository pattern y DTOs
 class UserController {
-  /**
-   * 📋 Obtener información del usuario actual - RUTA /current
-   * Implementa DTO para evitar envío de información sensible
-   */
+  // Obtener información del usuario actual - RUTA /current
+  // Usa DTO para evitar envío de información sensible
   static async getCurrentUser(req, res) {
     const currentUser = await userRepository.getCurrentUser(req.user._id);
 
@@ -20,7 +16,7 @@ class UserController {
       throwNotFound('Usuario no encontrado');
     }
 
-    logger.info(`🔍 Información de usuario actual solicitada por: ${req.user.email}`);
+    logger.info(`Información de usuario actual solicitada por: ${req.user.email}`);
 
     res.json({
       success: true,
@@ -29,15 +25,13 @@ class UserController {
     });
   }
 
-  /**
-   * 📋 Obtener todos los usuarios (solo admin)
-   */
+  // Obtener todos los usuarios (solo admin)
   static async getAllUsers(req, res) {
     const { page = 1, limit = 10 } = req.query;
 
     const result = await userRepository.getAll(page, limit);
 
-    logger.info(`📋 Lista de usuarios solicitada por admin: ${req.user.email}`);
+    logger.info(`Lista de usuarios solicitada por admin: ${req.user.email}`);
 
     res.json({
       success: true,
@@ -46,9 +40,7 @@ class UserController {
     });
   }
 
-  /**
-   * 🔍 Obtener usuario por ID
-   */
+  // Obtener usuario por ID
   static async getUserById(req, res) {
     const { uid } = req.params;
 
@@ -64,9 +56,7 @@ class UserController {
     });
   }
 
-  /**
-   * ✏️ Actualizar usuario
-   */
+  // Actualizar usuario
   static async updateUser(req, res) {
     const { uid } = req.params;
     const updateData = req.body;
@@ -84,9 +74,7 @@ class UserController {
     });
   }
 
-  /**
-   * 🗑️ Eliminar usuario
-   */
+  // Eliminar usuario
   static async deleteUser(req, res) {
     const { uid } = req.params;
 
@@ -103,9 +91,7 @@ class UserController {
     });
   }
 
-  /**
-   * 🔐 Solicitar recuperación de contraseña - Mejorado
-   */
+  // Solicitar recuperación de contraseña
   static async requestPasswordReset(req, res) {
     const { email } = req.body;
 
@@ -139,7 +125,7 @@ class UserController {
       `${user.first_name} ${user.last_name}`
     );
 
-    logger.info(`🔐 Recuperación de contraseña solicitada para: ${user.email}`);
+    logger.info(`Recuperación de contraseña solicitada para: ${user.email}`);
 
     res.json({
       success: true,
@@ -147,9 +133,7 @@ class UserController {
     });
   }
 
-  /**
-   * 🔒 Restablecer contraseña - Mejorado
-   */
+  // Restablecer contraseña
   static async resetPassword(req, res) {
     const { token, newPassword } = req.body;
 
@@ -188,7 +172,7 @@ class UserController {
       `${user.first_name} ${user.last_name}`
     );
 
-    logger.success(`🔒 Contraseña restablecida exitosamente para: ${user.email}`);
+    logger.success(`Contraseña restablecida exitosamente para: ${user.email}`);
 
     res.json({
       success: true,

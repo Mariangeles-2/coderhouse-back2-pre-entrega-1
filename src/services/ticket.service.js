@@ -3,17 +3,13 @@ import Ticket from '../models/Ticket.model.js';
 import productRepository from '../repositories/product.repository.js';
 import { logger } from '../utils/logger.util.js';
 
-/**
- * 🎫 Servicio de Tickets para lógica de compra robusta
- * Maneja la creación de tickets, verificación de stock y compras completas/incompletas
- */
+// Servicio de tickets para lógica de compra robusta
+// Maneja creación de tickets, verificación de stock y compras completas/incompletas
 class TicketService {
-  /**
-   * Procesar compra completa del carrito
-   */
+  // Procesar compra completa del carrito
   async processPurchase(userId, userEmail) {
     try {
-      logger.info(`🛒 Iniciando proceso de compra para usuario: ${userEmail}`);
+      logger.info(`Iniciando proceso de compra para usuario: ${userEmail}`);
 
       // Obtener carrito activo
       const cart = await cartDAO.findActiveByUser(userId);
@@ -38,7 +34,7 @@ class TicketService {
         // Actualizar carrito removiendo productos comprados exitosamente
         await this._updateCartAfterPurchase(cart._id, stockResults.successful);
 
-        logger.success(`✅ Compra procesada exitosamente. Ticket: ${ticket.code}`);
+        logger.success(`Compra procesada exitosamente. Ticket: ${ticket.code}`);
       }
 
       return {
@@ -49,14 +45,12 @@ class TicketService {
         message: this._generatePurchaseMessage(stockResults),
       };
     } catch (error) {
-      logger.error('❌ Error procesando compra:', error);
+      logger.error('Error procesando compra:', error);
       throw error;
     }
   }
 
-  /**
-   * Crear ticket de compra
-   */
+  // Crear ticket de compra
   async createTicket({
     userId,
     userEmail,
@@ -96,31 +90,27 @@ class TicketService {
 
       await ticket.save();
 
-      logger.success(`🎫 Ticket creado: ${ticket.code} por ${userEmail}`);
+      logger.success(`Ticket creado: ${ticket.code} por ${userEmail}`);
       return ticket;
     } catch (error) {
-      logger.error('❌ Error creando ticket:', error);
+      logger.error('Error creando ticket:', error);
       throw error;
     }
   }
 
-  /**
-   * Buscar ticket por código
-   */
+  // Buscar ticket por código
   async findByCode(code) {
     try {
       return await Ticket.findOne({ code })
         .populate('user', 'first_name last_name email')
         .populate('products.product', 'title price category');
     } catch (error) {
-      logger.error(`❌ Error buscando ticket ${code}:`, error);
+      logger.error(`Error buscando ticket ${code}:`, error);
       throw error;
     }
   }
 
-  /**
-   * Buscar tickets por usuario
-   */
+  // Buscar tickets por usuario
   async findByUser(userId, page = 1, limit = 10) {
     try {
       const skip = (page - 1) * limit;
@@ -142,32 +132,28 @@ class TicketService {
         },
       };
     } catch (error) {
-      logger.error(`❌ Error buscando tickets del usuario ${userId}:`, error);
+      logger.error(`Error buscando tickets del usuario ${userId}:`, error);
       throw error;
     }
   }
 
-  /**
-   * Actualizar estado del ticket
-   */
+  // Actualizar estado del ticket
   async updateStatus(ticketId, newStatus) {
     try {
       const ticket = await Ticket.findByIdAndUpdate(ticketId, { status: newStatus }, { new: true });
 
       if (ticket) {
-        logger.info(`📝 Estado de ticket actualizado: ${ticket.code} -> ${newStatus}`);
+        logger.info(`Estado de ticket actualizado: ${ticket.code} -> ${newStatus}`);
       }
 
       return ticket;
     } catch (error) {
-      logger.error(`❌ Error actualizando estado del ticket ${ticketId}:`, error);
+      logger.error(`Error actualizando estado del ticket ${ticketId}:`, error);
       throw error;
     }
   }
 
-  /**
-   * Obtener estadísticas de ventas
-   */
+  // Obtener estadísticas de ventas
   async getSalesStats(startDate, endDate) {
     try {
       const match = {
@@ -200,14 +186,12 @@ class TicketService {
         }
       );
     } catch (error) {
-      logger.error('❌ Error obteniendo estadísticas de ventas:', error);
+      logger.error('Error obteniendo estadísticas de ventas:', error);
       throw error;
     }
   }
 
-  /**
-   * Métodos privados
-   */
+  // Métodos privados
   async _updateCartAfterPurchase(cartId, successfulProducts) {
     try {
       // Remover productos comprados exitosamente del carrito en paralelo
@@ -217,7 +201,7 @@ class TicketService {
 
       await Promise.all(removePromises);
     } catch (error) {
-      logger.error('❌ Error actualizando carrito después de compra:', error);
+      logger.error('Error actualizando carrito después de compra:', error);
       // No lanzar error para no interrumpir el proceso de compra
     }
   }

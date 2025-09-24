@@ -7,19 +7,15 @@ import productRepository from '../repositories/product.repository.js';
 import ticketService from '../services/ticket.service.js';
 import { logger } from '../utils/logger.util.js';
 
-/**
- * 🛒 Controlador de Carritos - Actualizado con Repository Pattern
- * Usa DAOs, DTOs y Services para arquitectura profesional
- */
+// Controlador para todas las operaciones del carrito
+// Usa patrón Repository, DAOs y DTOs
 class CartController {
-  /**
-   * 🛒 Obtener carrito del usuario
-   */
+  // Obtener o crear carrito del usuario logueado
   static async getCart(req, res) {
     let cart = await cartDAO.findActiveByUser(req.user._id);
 
     if (!cart) {
-      logger.info(`🛒 Creando nuevo carrito para: ${req.user.email}`);
+      logger.info(`Creando nuevo carrito para: ${req.user.email}`);
       cart = await cartDAO.create({
         user: req.user._id,
         products: [],
@@ -27,7 +23,7 @@ class CartController {
     }
 
     const cartDTO = CartDTO.fromCart(cart);
-    logger.info(`🛒 Carrito obtenido para: ${req.user.email}`);
+    logger.info(`Carrito obtenido para: ${req.user.email}`);
 
     res.json({
       success: true,
@@ -35,52 +31,50 @@ class CartController {
     });
   }
 
-  /**
-   * ➕ Agregar producto al carrito - Refactorizado con Repository Pattern
-   */
+  // Agregar producto al carrito existente o crear uno nuevo
   static async addToCart(req, res) {
     const { productId, quantity = 1 } = req.body;
     const parsedQuantity = parseInt(quantity);
 
-    // Validaciones básicas
+    // Validar datos de entrada básicos
     CartController._validateAddToCartRequest(productId, parsedQuantity);
 
-    // Verificar producto usando repository
+    // Buscar producto usando repository
     const product = await productRepository.findById(productId);
     if (!product) {
       throwNotFound('Producto');
     }
 
-    // Verificar permisos y stock
+    // Verificar permisos de usuario y stock disponible
     CartController._validateProductForCart(req.user, product, parsedQuantity);
 
-    // Obtener o crear carrito
+    // Obtener carrito activo o crear uno nuevo
     let cart = await cartDAO.findActiveByUser(req.user._id);
     if (!cart) {
       cart = await cartDAO.create({ user: req.user._id, products: [] });
     }
 
-    // Verificar si el producto ya existe en el carrito
+    // Verificar si producto ya está en el carrito
     const existingProduct = cart.products.find((item) => item.product.toString() === productId);
 
     if (existingProduct) {
-      // Actualizar cantidad
+      // Sumar cantidad al producto existente
       await cartDAO.updateProductQuantity(
         cart._id,
         productId,
         existingProduct.quantity + parsedQuantity
       );
     } else {
-      // Agregar nuevo producto
+      // Agregar producto nuevo al carrito
       await cartDAO.addProduct(cart._id, productId, parsedQuantity);
     }
 
-    // Obtener carrito actualizado
+    // Traer carrito actualizado y convertir a DTO
     const updatedCart = await cartDAO.findById(cart._id);
     const cartDTO = CartDTO.fromCart(updatedCart);
 
     logger.success(
-      `➕ Producto agregado al carrito: ${product.title} (${parsedQuantity}) por ${req.user.email}`
+      `Producto agregado al carrito: ${product.title} (${parsedQuantity}) por ${req.user.email}`
     );
 
     res.json({
@@ -90,9 +84,7 @@ class CartController {
     });
   }
 
-  /**
-   * ✏️ Actualizar cantidad de producto en carrito
-   */
+  // Cambiar cantidad de un producto específico en el carrito
   static async updateProductQuantity(req, res) {
     const { pid } = req.params;
     const { quantity } = req.body;
@@ -112,7 +104,7 @@ class CartController {
       throwNotFound('Producto en el carrito');
     }
 
-    // Verificar stock disponible
+    // Verificar que hay suficiente stock
     const product = await productRepository.findById(pid);
     if (!product) {
       throwNotFound('Producto');
@@ -124,12 +116,12 @@ class CartController {
       );
     }
 
-    // Actualizar cantidad
+    // Actualizar cantidad en BD
     const updatedCart = await cartDAO.updateProductQuantity(cart._id, pid, parsedQuantity);
     const cartDTO = CartDTO.fromCart(updatedCart);
 
     logger.success(
-      `✏️ Cantidad actualizada en carrito: ${product.title} → ${parsedQuantity} por ${req.user.email}`
+      `Cantidad actualizada en carrito: ${product.title} → ${parsedQuantity} por ${req.user.email}`
     );
 
     res.json({
@@ -139,9 +131,7 @@ class CartController {
     });
   }
 
-  /**
-   * 🗑️ Eliminar producto del carrito
-   */
+  // Eliminar un producto completo del carrito
   static async removeFromCart(req, res) {
     const { pid } = req.params;
 
@@ -155,11 +145,11 @@ class CartController {
       throwNotFound('Producto en el carrito');
     }
 
-    // Remover producto
+    // Remover producto completamente del carrito
     const updatedCart = await cartDAO.removeProduct(cart._id, pid);
     const cartDTO = CartDTO.fromCart(updatedCart);
 
-    logger.success(`🗑️ Producto eliminado del carrito: ${pid} por ${req.user.email}`);
+    logger.success(`Producto eliminado del carrito: ${pid} por ${req.user.email}`);
 
     res.json({
       success: true,
@@ -168,9 +158,7 @@ class CartController {
     });
   }
 
-  /**
-   * 🧹 Limpiar carrito
-   */
+  // Vaciar carrito completo (no eliminar el carrito, solo los productos)
   static async clearCart(req, res) {
     const cart = await cartDAO.findActiveByUser(req.user._id);
     if (!cart) {
@@ -180,7 +168,7 @@ class CartController {
     const clearedCart = await cartDAO.clearProducts(cart._id);
     const cartDTO = CartDTO.fromCart(clearedCart);
 
-    logger.success(`🧹 Carrito limpiado por ${req.user.email}`);
+    logger.success(`Carrito limpiado por ${req.user.email}`);
 
     res.json({
       success: true,
@@ -189,9 +177,7 @@ class CartController {
     });
   }
 
-  /**
-   * 💳 Procesar compra (purchase) - Usando TicketService
-   */
+  // Finalizar compra - genera ticket y actualiza stock
   static async purchaseCart(req, res) {
     try {
       const purchaseResult = await ticketService.processPurchase(req.user._id, req.user.email);
@@ -203,7 +189,7 @@ class CartController {
       }
 
       logger.success(
-        `💳 Compra procesada: ${purchaseResult.ticket.code} por ${req.user.email} - Total: $${purchaseResult.total}`
+        `Compra procesada: ${purchaseResult.ticket.code} por ${req.user.email} - Total: $${purchaseResult.total}`
       );
 
       res.json({
@@ -214,14 +200,12 @@ class CartController {
           purchaseResult.failedProducts.length > 0 ? purchaseResult.failedProducts : undefined,
       });
     } catch (error) {
-      logger.error('❌ Error procesando compra:', error);
+      logger.error('Error procesando compra:', error);
       throw error;
     }
   }
 
-  /**
-   * 🔧 Métodos privados para validación
-   */
+  // Métodos de validación privados
   static _validateAddToCartRequest(productId, quantity) {
     if (!productId) {
       throwBadRequest('El ID del producto es requerido');
@@ -235,12 +219,12 @@ class CartController {
   }
 
   static _validateProductForCart(user, product, quantity) {
-    // Verificar que el usuario no sea propietario del producto (solo para premium)
+    // Usuarios premium no pueden agregar sus propios productos
     if (user.role === 'premium' && product.owner && product.owner.id === user._id.toString()) {
       throwForbidden('No puedes agregar tu propio producto al carrito');
     }
 
-    // Verificar stock disponible
+    // Verificar que hay stock suficiente
     if (product.stock < quantity) {
       throwBadRequest(
         `Stock insuficiente para ${product.title}. Solicitado: ${quantity}, Disponible: ${product.stock}`

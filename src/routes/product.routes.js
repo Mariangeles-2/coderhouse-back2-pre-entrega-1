@@ -11,72 +11,48 @@ import {
 
 const router = Router();
 
-/**
- * 🛍️ Rutas de Productos - Con autorización basada en roles
- * Solo administradores pueden crear, actualizar y eliminar productos
- */
+// Rutas de productos con autorización basada en roles
+// Solo admin y premium pueden crear/actualizar/eliminar productos
 
-// ========================================
-// 📖 RUTAS PÚBLICAS (lectura)
-// ========================================
-
-/**
- * GET / - Obtener todos los productos (público)
- */
+// RUTAS PÚBLICAS (lectura)
+// GET / - Obtener todos los productos (público)
 router.get('/', ProductController.getAllProducts);
 
-/**
- * GET /:pid - Obtener producto por ID (público)
- */
+// GET /:pid - Obtener producto por ID (público)
 router.get('/:pid', ProductController.getProductById);
 
-// ========================================
-// 🔐 RUTAS RESTRINGIDAS (admin y premium)
-// ========================================
-
-/**
- * POST / - Crear producto (admin y premium)
- */
+// RUTAS RESTRINGIDAS (admin y premium)
+// POST / - Crear producto (admin y premium)
 router.post(
   '/',
   authenticateJWT,
-  authRules.products.modify, // ✅ Usa el nuevo middleware que permite admin y premium
+  authRules.products.modify, // Permite admin y premium
   validateRequest(createProductValidation),
   ProductController.createProduct
 );
 
-/**
- * PUT /:pid - Actualizar producto (admin y premium con ownership)
- */
+// PUT /:pid - Actualizar producto (admin y premium con ownership)
 router.put(
   '/:pid',
   authenticateJWT,
-  authRules.products.modify, // ✅ Usa el nuevo middleware
-  authRules.ownership('product'), // ✅ Premium solo sus productos, admin cualquiera
+  authRules.products.modify, // Permite admin y premium
+  authRules.ownership('product'), // Premium solo sus productos, admin cualquiera
   validateRequest(updateProductValidation),
   ProductController.updateProduct
 );
 
-/**
- * DELETE /:pid - Eliminar producto (admin y premium con ownership)
- */
+// DELETE /:pid - Eliminar producto (admin y premium con ownership)
 router.delete(
   '/:pid',
   authenticateJWT,
-  authRules.products.modify, // ✅ Usa el nuevo middleware
-  authRules.ownership('product'), // ✅ Premium solo sus productos, admin cualquiera
+  authRules.products.modify, // Permite admin y premium
+  authRules.ownership('product'), // Premium solo sus productos, admin cualquiera
   ProductController.deleteProduct
 );
 
-// ========================================
-// 👤 RUTAS ESPECÍFICAS DE USUARIO
-// ========================================
-
-/**
- * GET /owner/:ownerId - Obtener productos por propietario
- * Admin: puede ver cualquier propietario
- * Premium: solo puede ver sus propios productos
- */
+// RUTAS ESPECÍFICAS DE USUARIO
+// GET /owner/:ownerId - Obtener productos por propietario
+// Admin: puede ver cualquier propietario, Premium: solo puede ver sus propios productos
 router.get(
   '/owner/:ownerId?',
   authRules.adminOrPremium, // Admin o premium

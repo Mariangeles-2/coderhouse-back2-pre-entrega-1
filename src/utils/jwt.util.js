@@ -4,11 +4,8 @@ import jwt from 'jsonwebtoken';
 
 import { logger } from './logger.util.js';
 
-/**
- * 🔐 Sistema JWT con Access y Refresh Tokens - Versión Limpia
- * Solo incluye métodos que realmente se utilizan
- */
-
+// Sistema JWT con Access y Refresh Tokens
+// Solo incluye métodos que realmente se utilizan
 class JWTService {
   constructor() {
     this.accessTokenSecret = process.env.JWT_ACCESS_SECRET || 'your-super-secret-access-key';
@@ -17,9 +14,7 @@ class JWTService {
     this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
   }
 
-  /**
-   * 🎫 Generar Access Token (corta duración)
-   */
+  // Generar Access Token (corta duración)
   generateAccessToken(user) {
     try {
       const payload = {
@@ -35,24 +30,22 @@ class JWTService {
         audience: 'ecommerce-users',
       });
 
-      logger.auth(`✅ Access token generado para: ${user.email}`);
+      logger.auth(`Access token generado para: ${user.email}`);
       return token;
     } catch (error) {
-      logger.error('❌ Error generando access token:', error);
+      logger.error('Error generando access token:', error);
       throw new Error('Error generando token de acceso');
     }
   }
 
-  /**
-   * 🔄 Generar Refresh Token (larga duración)
-   */
+  // Generar Refresh Token (larga duración)
   generateRefreshToken(user) {
     try {
       const payload = {
         id: user._id,
         email: user.email,
+        jti: randomUUID(), // JWT ID único para invalidar tokens específicos
         type: 'refresh',
-        jti: randomUUID(),
       };
 
       const token = jwt.sign(payload, this.refreshTokenSecret, {
@@ -61,28 +54,23 @@ class JWTService {
         audience: 'ecommerce-users',
       });
 
-      logger.auth(`✅ Refresh token generado para: ${user.email}`);
+      logger.auth(`Refresh token generado para: ${user.email}`);
       return token;
     } catch (error) {
-      logger.error('❌ Error generando refresh token:', error);
-      throw new Error('Error generando token de renovación');
+      logger.error('Error generando refresh token:', error);
+      throw new Error('Error generando token de actualización');
     }
   }
 
-  /**
-   * 🎯 Generar par de tokens (access + refresh) - MÉTODO PRINCIPAL
-   */
+  // Generar par de tokens (access + refresh)
   generateTokenPair(user) {
     return {
       accessToken: this.generateAccessToken(user),
       refreshToken: this.generateRefreshToken(user),
-      expiresIn: this.accessTokenExpiry,
     };
   }
 
-  /**
-   * 🔍 Verificar Access Token - MÉTODO PRINCIPAL
-   */
+  // Verificar Access Token
   verifyAccessToken(token) {
     try {
       const decoded = jwt.verify(token, this.accessTokenSecret, {
@@ -91,19 +79,21 @@ class JWTService {
       });
 
       if (decoded.type !== 'access') {
-        logger.warning('🚫 Token inválido: no es un access token');
-        throw new Error('Token inválido');
+        throw new Error('Token inválido: no es un access token');
       }
 
       return decoded;
     } catch (error) {
-      return this._handleTokenError(error, 'access');
+      if (error.name === 'TokenExpiredError') {
+        throw new Error('Token de acceso expirado');
+      } else if (error.name === 'JsonWebTokenError') {
+        throw new Error('Token de acceso inválido');
+      }
+      throw error;
     }
   }
 
-  /**
-   * 🔄 Verificar Refresh Token - MÉTODO PRINCIPAL
-   */
+  // Verificar Refresh Token
   verifyRefreshToken(token) {
     try {
       const decoded = jwt.verify(token, this.refreshTokenSecret, {
@@ -112,44 +102,46 @@ class JWTService {
       });
 
       if (decoded.type !== 'refresh') {
-        logger.warning('🚫 Token inválido: no es un refresh token');
-        throw new Error('Token inválido');
+        throw new Error('Token inválido: no es un refresh token');
       }
 
       return decoded;
     } catch (error) {
-      return this._handleTokenError(error, 'refresh');
+      if (error.name === 'TokenExpiredError') {
+        throw new Error('Refresh token expirado');
+      } else if (error.name === 'JsonWebTokenError') {
+        throw new Error('Refresh token inválido');
+      }
+      throw error;
     }
   }
 
-  /**
-   * 🔧 Método privado para manejar errores de tokens
-   */
-  _handleTokenError(error, tokenType) {
-    if (error.name === 'TokenExpiredError') {
-      logger.warning(`⏰ ${tokenType} token expirado`);
-      throw new Error('Token expirado');
-    } else if (error.name === 'JsonWebTokenError') {
-      logger.warning(`🚫 ${tokenType} token inválido`);
-      throw new Error('Token inválido');
-    } else {
-      logger.error(`❌ Error verificando ${tokenType} token:`, error.message);
-      throw new Error(
-        `Error verificando token de ${tokenType === 'access' ? 'acceso' : 'renovación'}`
-      );
-    }
-  }
-
-  /**
-   * 🔧 Extraer token del header Authorization - MÉTODO PRINCIPAL
-   */
-  extractTokenFromHeader(authHeader) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  // Decodificar token sin verificar (útil para debug)
+  decodeToken(token) {
+    try {
+      return jwt.decode(token, { complete: true });
+    } catch (error) {
+      logger.error('Error decodificando token:', error);
       return null;
     }
-    return authHeader.substring(7); // Remover "Bearer "
+  }
+
+  // Verificar si un token está próximo a expirar
+  isTokenExpiringSoon(token, minutesThreshold = 5) {
+    try {
+      const decoded = jwt.decode(token);
+      if (!decoded || !decoded.exp) return true;
+
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = decoded.exp - now;
+      const thresholdInSeconds = minutesThreshold * 60;
+
+      return timeUntilExpiry <= thresholdInSeconds;
+    } catch (error) {
+      logger.error('Error verificando expiración:', error);
+      return true;
+    }
   }
 }
 
-// Exportar instancia singleton
 export const jwtService = new JWTService();

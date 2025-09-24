@@ -8,10 +8,8 @@ import {
   thumbnailArray,
 } from './common.validation.js';
 
-/**
- * 🛍️ Validaciones de Productos - Refactorizadas con Clean Code
- * Usa las categorías del modelo Product y componentes reutilizables
- */
+// Validaciones de productos con Clean Code
+// Usa las categorías del modelo Product y componentes reutilizables
 
 // Categorías válidas extraídas del modelo Product
 export const PRODUCT_CATEGORIES = [
@@ -93,10 +91,7 @@ export const updateProductValidation = Joi.object({
     'object.min': 'Debe proporcionar al menos un campo para actualizar',
   });
 
-/**
- * 🛒 Validaciones para carritos - Refactorizadas
- */
-
+// Validaciones para carritos
 // Validación para agregar producto al carrito
 export const addToCartValidation = Joi.object({
   productId: Joi.string()

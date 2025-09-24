@@ -2,14 +2,9 @@ import { throwBadRequest, throwForbidden, throwNotFound } from '../middlewares/e
 import productRepository from '../repositories/product.repository.js';
 import { logger } from '../utils/logger.util.js';
 
-/**
- * 🛍️ Controlador de Productos - Actualizado con Repository Pattern
- * Usa Repository y DTOs para arquitectura profesional
- */
+// Manejo de productos con Repository pattern
 class ProductController {
-  /**
-   * 📋 Obtener todos los productos
-   */
+  // Obtener todos los productos con paginación y filtros
   static async getAllProducts(req, res) {
     const {
       page = 1,
@@ -24,7 +19,7 @@ class ProductController {
     const result = await productRepository.findAll(filters);
 
     logger.info(
-      `📋 Lista de productos solicitada - Página: ${page}, Total: ${result.pagination.total}`
+      `Lista de productos solicitada - Página: ${page}, Total: ${result.pagination.total}`
     );
 
     res.json({
@@ -34,9 +29,7 @@ class ProductController {
     });
   }
 
-  /**
-   * 🔍 Obtener producto por ID
-   */
+  // Obtener producto específico por ID
   static async getProductById(req, res) {
     const { pid } = req.params;
 
@@ -45,7 +38,7 @@ class ProductController {
       throwNotFound('Producto');
     }
 
-    logger.info(`🔍 Producto consultado: ${product.title} (ID: ${pid})`);
+    logger.info(`Producto consultado: ${product.title} (ID: ${pid})`);
 
     res.json({
       success: true,
@@ -53,9 +46,7 @@ class ProductController {
     });
   }
 
-  /**
-   * ➕ Crear nuevo producto
-   */
+  // Crear nuevo producto
   static async createProduct(req, res) {
     const { title, description, price, stock, category } = req.body;
 
@@ -78,7 +69,7 @@ class ProductController {
 
     const product = await productRepository.create(productData);
 
-    logger.success(`✅ Producto creado: ${product.title} por ${req.user.email}`);
+    logger.success(`Producto creado: ${product.title} por ${req.user.email}`);
 
     res.status(201).json({
       success: true,
@@ -87,9 +78,7 @@ class ProductController {
     });
   }
 
-  /**
-   * ✏️ Actualizar producto
-   */
+  // Actualizar producto existente
   static async updateProduct(req, res) {
     const { pid } = req.params;
     const updateData = req.body;
@@ -119,7 +108,7 @@ class ProductController {
 
     const updatedProduct = await productRepository.update(pid, updateData);
 
-    logger.success(`✏️ Producto actualizado: ${updatedProduct.title} por ${req.user.email}`);
+    logger.success(`Producto actualizado: ${updatedProduct.title} por ${req.user.email}`);
 
     res.json({
       success: true,
@@ -128,9 +117,7 @@ class ProductController {
     });
   }
 
-  /**
-   * 🗑️ Eliminar producto
-   */
+  // Eliminar producto
   static async deleteProduct(req, res) {
     const { pid } = req.params;
 
@@ -146,7 +133,7 @@ class ProductController {
 
     await productRepository.delete(pid);
 
-    logger.success(`🗑️ Producto eliminado: ${product.title} por ${req.user.email}`);
+    logger.success(`Producto eliminado: ${product.title} por ${req.user.email}`);
 
     res.json({
       success: true,
@@ -154,9 +141,7 @@ class ProductController {
     });
   }
 
-  /**
-   * 📊 Obtener productos por propietario (para usuarios premium)
-   */
+  // Obtener productos por propietario (para usuarios premium)
   static async getProductsByOwner(req, res) {
     const ownerId = req.params.ownerId || req.user._id;
 
@@ -167,7 +152,7 @@ class ProductController {
 
     const products = await productRepository.findByOwner(ownerId);
 
-    logger.info(`📊 Productos consultados para propietario: ${ownerId}`);
+    logger.info(`Productos consultados para propietario: ${ownerId}`);
 
     res.json({
       success: true,
@@ -176,9 +161,7 @@ class ProductController {
     });
   }
 
-  /**
-   * 🔧 Métodos privados para reducir complejidad
-   */
+  // Métodos privados para reducir complejidad
   static _validateRequiredFields({ title, description, price, stock, category }) {
     if (!title) throwBadRequest('El título es requerido');
     if (!description) throwBadRequest('La descripción es requerida');

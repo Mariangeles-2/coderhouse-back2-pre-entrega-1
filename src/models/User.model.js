@@ -1,10 +1,8 @@
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 
-/**
- * 👤 Modelo de Usuario para el Ecommerce
- * Incluye todos los campos requeridos según las especificaciones + seguridad mejorada
- */
+// Modelo de usuario para el ecommerce
+// Incluye todos los campos requeridos según las especificaciones + seguridad mejorada
 const userSchema = new mongoose.Schema(
   {
     first_name: {
@@ -54,7 +52,7 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin', 'premium'],
       default: 'user',
     },
-    // 🔐 Campos para recuperación de contraseñas
+    // Campos para recuperación de contraseñas
     passwordResetToken: {
       type: String,
       default: undefined,
@@ -63,7 +61,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: undefined,
     },
-    // 📊 Campos de seguridad adicionales
+    // Campos de seguridad adicionales
     lastLogin: {
       type: Date,
       default: Date.now,
@@ -86,9 +84,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-/**
- * 🔐 Middleware para hashear la contraseña antes de guardar
- */
+// Middleware para hashear la contraseña antes de guardar
 userSchema.pre('save', async function (next) {
   // Solo hashear la contraseña si ha sido modificada (o es nueva)
   if (!this.isModified('password')) {
@@ -104,23 +100,17 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-/**
- * 🔍 Método para comparar contraseñas
- */
+// Método para comparar contraseñas
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-/**
- * 🔒 Método para verificar si la cuenta está bloqueada
- */
+// Método para verificar si la cuenta está bloqueada
 userSchema.methods.isLocked = function () {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 };
 
-/**
- * 🔐 Método para incrementar intentos de login fallidos
- */
+// Método para incrementar intentos de login fallidos
 userSchema.methods.incLoginAttempts = function () {
   // Si tenemos un lock previo y ya expiró, reiniciar
   if (this.lockUntil && this.lockUntil < Date.now()) {
@@ -140,9 +130,7 @@ userSchema.methods.incLoginAttempts = function () {
   return this.updateOne(updates);
 };
 
-/**
- * ✅ Método para resetear intentos de login tras login exitoso
- */
+// Método para resetear intentos de login tras login exitoso
 userSchema.methods.resetLoginAttempts = function () {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 },
@@ -150,9 +138,7 @@ userSchema.methods.resetLoginAttempts = function () {
   });
 };
 
-/**
- * 📊 Método para obtener información pública del usuario (sin contraseña)
- */
+// Método para obtener información pública del usuario (sin contraseña)
 userSchema.methods.toPublicJSON = function () {
   const userObject = this.toObject();
   delete userObject.password;
@@ -163,16 +149,12 @@ userSchema.methods.toPublicJSON = function () {
   return userObject;
 };
 
-/**
- * 👥 Método para buscar usuario por email
- */
+// Método para buscar usuario por email
 userSchema.statics.findByEmail = function (email) {
   return this.findOne({ email: email.toLowerCase() });
 };
 
-/**
- * 🔍 Método para buscar usuario por token de recuperación
- */
+// Método para buscar usuario por token de recuperación
 userSchema.statics.findByResetToken = function (token) {
   return this.findOne({
     passwordResetToken: token,
@@ -180,9 +162,7 @@ userSchema.statics.findByResetToken = function (token) {
   });
 };
 
-/**
- * 🏷️ Índices para optimización
- */
+// Índices para optimización
 userSchema.index({ role: 1 });
 userSchema.index({ passwordResetToken: 1 });
 userSchema.index({ passwordResetExpires: 1 });

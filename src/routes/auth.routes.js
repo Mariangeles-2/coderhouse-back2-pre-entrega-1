@@ -13,20 +13,13 @@ import {
 
 const router = Router();
 
-/**
- * 🔐 Rutas de Autenticación - Con middlewares de autorización
- */
+// Rutas de autenticación con middlewares de autorización
 
 // Aplicar rate limiting a todas las rutas de auth
 router.use(generalLimiter);
 
-// ========================================
-// 📝 RUTAS PÚBLICAS (solo invitados)
-// ========================================
-
-/**
- * POST /register - Registro de usuario
- */
+// RUTAS PÚBLICAS (solo invitados)
+// POST /register - Registro de usuario
 router.post(
   '/register',
   authRules.guestOnly, // Solo usuarios no autenticados
@@ -34,9 +27,7 @@ router.post(
   AuthController.register
 );
 
-/**
- * POST /login - Inicio de sesión
- */
+// POST /login - Inicio de sesión
 router.post(
   '/login',
   authRules.guestOnly, // Solo usuarios no autenticados
@@ -44,18 +35,14 @@ router.post(
   AuthController.login
 );
 
-/**
- * POST /forgot-password - Solicitar recuperación de contraseña
- */
+// POST /forgot-password - Solicitar recuperación de contraseña
 router.post(
   '/forgot-password',
   authRules.guestOnly, // Solo usuarios no autenticados
   AuthController.requestPasswordReset
 );
 
-/**
- * POST /reset-password - Restablecer contraseña
- */
+// POST /reset-password - Restablecer contraseña
 router.post(
   '/reset-password',
   authRules.guestOnly, // Solo usuarios no autenticados
@@ -63,36 +50,27 @@ router.post(
   AuthController.resetPassword
 );
 
-// ========================================
-// 🔐 RUTAS AUTENTICADAS
-// ========================================
-
-/**
- * GET /current - Usuario actual (DTO seguro sin información sensible)
- */
+// RUTAS AUTENTICADAS
+// GET /current - Usuario actual (DTO seguro sin información sensible)
 router.get(
   '/current',
-  authenticateJWT, // ✅ Aplicar JWT solo aquí
+  authenticateJWT, // Aplicar JWT solo aquí
   authRules.authenticated, // Cualquier usuario autenticado
   AuthController.current
 );
 
-/**
- * POST /refresh-token - Renovar token de acceso
- */
+// POST /refresh-token - Renovar token de acceso
 router.post(
   '/refresh-token',
-  authenticateJWT, // ✅ Aplicar JWT solo aquí
+  authenticateJWT, // Aplicar JWT solo aquí
   authRules.authenticated, // Cualquier usuario autenticado
   AuthController.refreshToken
 );
 
-/**
- * POST /logout - Cerrar sesión
- */
+// POST /logout - Cerrar sesión
 router.post(
   '/logout',
-  authenticateJWT, // ✅ Aplicar JWT solo aquí
+  authenticateJWT, // Aplicar JWT solo aquí
   authRules.authenticated, // Cualquier usuario autenticado
   AuthController.logout
 );

@@ -2,10 +2,8 @@ import Joi from 'joi';
 
 import { commonValidations, confirmation, required } from './common.validation.js';
 
-/**
- * 🛡️ Validaciones de Autenticación - Refactorizadas con Clean Code
- * Usa componentes reutilizables para mayor mantenibilidad
- */
+// Validaciones de autenticación con Clean Code
+// Usa componentes reutilizables para mayor mantenibilidad
 
 export const registerValidation = Joi.object({
   first_name: required(commonValidations.name, 'El nombre').messages({

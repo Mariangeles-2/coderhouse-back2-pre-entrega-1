@@ -1,14 +1,9 @@
 import Joi from 'joi';
 
-/**
- * 🧱 Validaciones Reutilizables - Clean Code (Versión Limpia)
- * Solo schemas que realmente se utilizan en la aplicación
- */
+// Validaciones reutilizables con Clean Code
+// Solo schemas que realmente se utilizan en la aplicación
 
-// ========================================
-// 🎯 Validaciones Base Reutilizables
-// ========================================
-
+// Validaciones base reutilizables
 export const commonValidations = {
   // Validación de nombres (aplica para firstName, lastName, etc.)
   name: Joi.string()
@@ -78,26 +73,17 @@ export const commonValidations = {
   }),
 };
 
-// ========================================
-// 🔧 Funciones Helper para Validaciones
-// ========================================
-
-/**
- * Crear validación requerida para cualquier campo
- */
+// Funciones helper para validaciones
+// Crear validación requerida para cualquier campo
 export const required = (schema, fieldName = 'Campo') =>
   schema.required().messages({
     'any.required': `${fieldName} es obligatorio`,
   });
 
-/**
- * Crear validación opcional para cualquier campo
- */
+// Crear validación opcional para cualquier campo
 export const optional = (schema) => schema.optional();
 
-/**
- * Crear validación de confirmación (para contraseñas, emails, etc.)
- */
+// Crear validación de confirmación (para contraseñas, emails, etc.)
 export const confirmation = (fieldName, label = 'confirmación') =>
   Joi.string()
     .valid(Joi.ref(fieldName))
@@ -107,9 +93,7 @@ export const confirmation = (fieldName, label = 'confirmación') =>
       'any.required': `La ${label} es obligatoria`,
     });
 
-/**
- * Crear validación de array de URLs para thumbnails
- */
+// Crear validación de array de URLs para thumbnails
 export const thumbnailArray = (maxItems = 5) =>
   Joi.array()
     .items(
@@ -123,9 +107,7 @@ export const thumbnailArray = (maxItems = 5) =>
       'array.max': `No puedes agregar más de ${maxItems} imágenes`,
     });
 
-/**
- * Crear validación de texto descriptivo
- */
+// Crear validación de texto descriptivo
 export const description = (minLength = 10, maxLength = 1000) =>
   Joi.string()
     .min(minLength)

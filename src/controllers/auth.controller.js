@@ -8,14 +8,10 @@ import { jwtService } from '../utils/jwt.util.js';
 import { logger } from '../utils/logger.util.js';
 import { passwordResetService } from '../utils/passwordReset.util.js';
 
-/**
- * 🔐 Controlador de Autenticación - Actualizado con Repository Pattern
- * Usa Repository, DTOs y Services para arquitectura profesional
- */
+// Controlador de autenticación con Repository pattern
+// Usa Repository, DTOs y Services
 class AuthController {
-  /**
-   * 📝 Registro de usuario
-   */
+  // Registro de usuario
   static async register(req, res) {
     const { first_name, last_name, email, age, password } = req.body;
 
@@ -25,14 +21,14 @@ class AuthController {
       throwBadRequest('El email ya está registrado');
     }
 
-    // 🎯 Determinar rol basado en el email (para pruebas y desarrollo)
+    // Determinar rol basado en el email (para pruebas y desarrollo)
     let role = 'user'; // Por defecto
     if (email.toLowerCase().includes('admin')) {
       role = 'admin';
-      logger.info(`🔑 Asignando rol admin a: ${email}`);
+      logger.info(`Asignando rol admin a: ${email}`);
     } else if (email.toLowerCase().includes('premium')) {
       role = 'premium';
-      logger.info(`🔑 Asignando rol premium a: ${email}`);
+      logger.info(`Asignando rol premium a: ${email}`);
     }
 
     // Crear usuario usando repository
@@ -42,12 +38,12 @@ class AuthController {
       email,
       age: parseInt(age),
       password,
-      role, // ✅ Incluir el rol determinado
+      role, // Incluir el rol determinado
     };
 
     const newUser = await userRepository.create(userData);
 
-    logger.success(`✅ Usuario registrado: ${newUser.email} con rol: ${newUser.role}`);
+    logger.success(`Usuario registrado: ${newUser.email} con rol: ${newUser.role}`);
 
     res.status(201).json({
       success: true,
@@ -56,20 +52,16 @@ class AuthController {
     });
   }
 
-  /**
-   * 🔑 Login de usuario
-   */
+  // Login de usuario
   static login(req, res, next) {
     passport.authenticate('local-login', async (err, user, info) => {
       if (err) {
-        logger.error('❌ Error en autenticación:', err);
+        logger.error('Error en autenticación:', err);
         return next(err);
       }
 
       if (!user) {
-        logger.warning(
-          `🚫 Intento de login fallido: ${req.body.email || 'email no proporcionado'}`
-        );
+        logger.warning(`Intento de login fallido: ${req.body.email || 'email no proporcionado'}`);
 
         return res.status(401).json({
           success: false,
@@ -87,13 +79,13 @@ class AuthController {
         // Establecer sesión
         req.login(user, (loginErr) => {
           if (loginErr) {
-            logger.error('❌ Error estableciendo sesión:', loginErr);
+            logger.error('Error estableciendo sesión:', loginErr);
             return next(loginErr);
           }
 
           const userDTO = UserDTO.currentUser(user);
 
-          logger.success(`🔑 Login exitoso: ${user.email}`);
+          logger.success(`Login exitoso: ${user.email}`);
 
           res.json({
             success: true,
@@ -103,21 +95,19 @@ class AuthController {
           });
         });
       } catch (tokenError) {
-        logger.error('❌ Error generando tokens:', tokenError);
+        logger.error('Error generando tokens:', tokenError);
         next(tokenError);
       }
     })(req, res, next);
   }
 
-  /**
-   * 🚪 Logout de usuario
-   */
+  // Logout de usuario
   static logout(req, res) {
     const userEmail = req.user?.email || 'Usuario no identificado';
 
     req.logout((err) => {
       if (err) {
-        logger.error('❌ Error en logout:', err);
+        logger.error('Error en logout:', err);
         return res.status(500).json({
           success: false,
           message: 'Error al cerrar sesión',
@@ -126,14 +116,14 @@ class AuthController {
 
       req.session.destroy((sessionErr) => {
         if (sessionErr) {
-          logger.error('❌ Error destruyendo sesión:', sessionErr);
+          logger.error('Error destruyendo sesión:', sessionErr);
           return res.status(500).json({
             success: false,
             message: 'Error al destruir sesión',
           });
         }
 
-        logger.info(`🚪 Logout exitoso: ${userEmail}`);
+        logger.info(`Logout exitoso: ${userEmail}`);
 
         res.json({
           success: true,
@@ -143,9 +133,7 @@ class AuthController {
     });
   }
 
-  /**
-   * 👤 Usuario actual (ruta /current mejorada)
-   */
+  // Usuario actual (ruta /current mejorada)
   static async current(req, res) {
     if (!req.user) {
       throwUnauthorized('No hay usuario autenticado');
@@ -158,7 +146,7 @@ class AuthController {
       throwUnauthorized('Usuario no encontrado');
     }
 
-    logger.info(`👤 Información de usuario actual solicitada: ${req.user.email}`);
+    logger.info(`Información de usuario actual solicitada: ${req.user.email}`);
 
     res.json({
       success: true,
@@ -167,9 +155,7 @@ class AuthController {
     });
   }
 
-  /**
-   * 🔄 Renovar token de acceso
-   */
+  // Renovar token de acceso
   static async refreshToken(req, res) {
     const { refreshToken } = req.body;
 
@@ -190,7 +176,7 @@ class AuthController {
       // Generar nuevo par de tokens
       const tokens = jwtService.generateTokenPair(user);
 
-      logger.info(`🔄 Token renovado para: ${user.email}`);
+      logger.info(`Token renovado para: ${user.email}`);
 
       res.json({
         success: true,
@@ -198,14 +184,12 @@ class AuthController {
         tokens,
       });
     } catch (error) {
-      logger.warning(`🚫 Error renovando token: ${error.message}`);
+      logger.warning(`Error renovando token: ${error.message}`);
       throwUnauthorized('Refresh token inválido o expirado');
     }
   }
 
-  /**
-   * 🔐 Solicitar recuperación de contraseña
-   */
+  // Solicitar recuperación de contraseña
   static async requestPasswordReset(req, res) {
     const { email } = req.body;
 
@@ -240,21 +224,19 @@ class AuthController {
         `${user.first_name} ${user.last_name}`
       );
 
-      logger.info(`🔐 Recuperación de contraseña solicitada para: ${user.email}`);
+      logger.info(`Recuperación de contraseña solicitada para: ${user.email}`);
 
       res.json({
         success: true,
         message: 'Email de recuperación enviado exitosamente',
       });
     } catch (error) {
-      logger.error('❌ Error en recuperación de contraseña:', error);
+      logger.error('Error en recuperación de contraseña:', error);
       throw error;
     }
   }
 
-  /**
-   * 🔒 Restablecer contraseña
-   */
+  // Restablecer contraseña
   static async resetPassword(req, res) {
     const { token, newPassword } = req.body;
 
@@ -293,7 +275,7 @@ class AuthController {
       `${user.first_name} ${user.last_name}`
     );
 
-    logger.success(`🔒 Contraseña restablecida exitosamente para: ${user.email}`);
+    logger.success(`Contraseña restablecida exitosamente para: ${user.email}`);
 
     res.json({
       success: true,
